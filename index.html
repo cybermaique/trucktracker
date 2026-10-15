@@ -3,30 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TruckTracker · Gestão de frotas</title>
     <meta
       name="description"
-      content="TruckTracker — cadastre caminhões e acompanhe a localização da sua frota em um mapa interativo."
+      content="Cadastre caminhões e acompanhe a frota em um mapa interativo, ordenada pela distância até você."
     />
-    <meta name="theme-color" content="#0F0F0F" />
+    <meta name="theme-color" content="#2563eb" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="TruckTracker — Gestão de Frotas" />
+    <meta property="og:title" content="TruckTracker · Gestão de frotas" />
     <meta
       property="og:description"
-      content="Cadastro de caminhões e rastreamento em mapa interativo, ordenado pela proximidade do usuário."
+      content="Cadastro de caminhões e rastreamento em mapa vetorial interativo, com distâncias calculadas a partir do usuário."
     />
-    <link rel="icon" type="image/svg+xml" href="/truck-tracker-favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <title>TruckTracker — Gestão de Frotas</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Applies the saved theme before first paint to avoid a light/dark flash. -->
+    <script>
+      try {
+        const theme = localStorage.getItem("trucktracker:theme");
+        const dark =
+          theme === "dark" ||
+          (theme !== "light" &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
   </head>
   <body>
-    <noscript
-      >Você precisa habilitar o JavaScript para usar o TruckTracker.</noscript
-    >
+    <noscript>Habilite o JavaScript para usar o TruckTracker.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
