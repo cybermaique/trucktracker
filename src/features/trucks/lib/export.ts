@@ -5,7 +5,7 @@ const COLUMNS = [
   "Identificador",
   "Placa",
   "Rastreador",
-  "Distância (km)",
+  "Distância em linha reta (km)",
   "Latitude",
   "Longitude",
   "Início",

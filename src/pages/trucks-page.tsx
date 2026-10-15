@@ -138,7 +138,7 @@ export function TrucksPage() {
         description={
           isPending
             ? "Carregando a frota…"
-            : `${trucks.length} caminhões na frota, ordenados pela distância até você.`
+            : `${trucks.length} caminhões na frota, ordenados pela distância em linha reta até você.`
         }
         actions={
           <>

@@ -46,3 +46,35 @@ export const todayIsoDate = () => {
   const offsetMs = now.getTimezoneOffset() * 60_000;
   return new Date(now.getTime() - offsetMs).toISOString().slice(0, 10);
 };
+
+/** `45 min`, `2 h` or `1 h 47 min`. */
+export const formatDuration = (minutes: number) => {
+  const total = Math.max(1, Math.round(minutes));
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  if (hours === 0) return `${rest} min`;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+};
+
+const relativeFormatter = new Intl.RelativeTimeFormat(LOCALE, {
+  numeric: "auto",
+});
+
+/** How long ago a date-only ISO string was: `há 2 anos`, `há 5 meses`. */
+export const formatSince = (isoDate: string, now = new Date()) => {
+  const date = new Date(`${isoDate.slice(0, 10)}T00:00:00Z`);
+  const months =
+    (now.getUTCFullYear() - date.getUTCFullYear()) * 12 +
+    (now.getUTCMonth() - date.getUTCMonth());
+  if (months >= 12) {
+    return relativeFormatter.format(-Math.floor(months / 12), "year");
+  }
+  if (months >= 1) return relativeFormatter.format(-months, "month");
+  const today = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate()
+  );
+  const days = Math.floor((today - date.getTime()) / 86_400_000);
+  return relativeFormatter.format(-Math.max(0, days), "day");
+};

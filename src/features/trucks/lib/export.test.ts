@@ -26,7 +26,7 @@ const truck: TruckWithDistance = {
 describe("toCsv", () => {
   it("writes a header and one escaped row per truck", () => {
     expect(toCsv([truck]).split("\n")).toEqual([
-      "Identificador;Placa;Rastreador;Distância (km);Latitude;Longitude;Início",
+      "Identificador;Placa;Rastreador;Distância em linha reta (km);Latitude;Longitude;Início",
       '"Volvo ""FH""; São Paulo";ABC-1234;VT540SP01;2.6;-23.56170;-46.65590;17/02/2024',
     ]);
   });
