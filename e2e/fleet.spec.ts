@@ -5,6 +5,22 @@ const rowFor = (page: Page, name: string) =>
   fleetTable(page).getByRole("row").filter({ hasText: name });
 
 test.describe("Fleet management", () => {
+  test("serves every API request from the mock Service Worker", async ({
+    page,
+  }) => {
+    const leaked: string[] = [];
+    page.on("response", (response) => {
+      if (response.url().includes("/api/") && !response.fromServiceWorker()) {
+        leaked.push(`${response.status()} ${response.url()}`);
+      }
+    });
+
+    await page.goto("/caminhoes");
+    await expect(fleetTable(page)).toBeVisible();
+
+    expect(leaked).toEqual([]);
+  });
+
   test("overview summarizes the fleet on a rendered map", async ({ page }) => {
     await page.goto("/");
 
