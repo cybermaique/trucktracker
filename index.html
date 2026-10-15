@@ -1,12 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/truck-tracker-favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TruckTracker - Gestão de Frotas de Caminhões</title>
+    <title>TruckTracker · Gestão de frotas</title>
+    <meta
+      name="description"
+      content="Cadastre caminhões e acompanhe a frota em um mapa interativo, ordenada pela distância até você."
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TruckTracker · Gestão de frotas" />
+    <meta
+      property="og:description"
+      content="Cadastro de caminhões e rastreamento em mapa vetorial interativo, com distâncias calculadas a partir do usuário."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Applies the saved theme before first paint to avoid a light/dark flash. -->
+    <script>
+      try {
+        const theme = localStorage.getItem("trucktracker:theme");
+        const dark =
+          theme === "dark" ||
+          (theme !== "light" &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
   </head>
   <body>
+    <noscript>Habilite o JavaScript para usar o TruckTracker.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
