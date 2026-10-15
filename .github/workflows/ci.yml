@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Lint, test & build
+    name: Lint, types, unit tests & build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -38,7 +38,10 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
-      - name: Test with coverage
+      - name: Find unused files, exports and dependencies
+        run: pnpm knip
+
+      - name: Unit and integration tests
         run: pnpm test:coverage
 
       - name: Build
@@ -50,4 +53,34 @@ jobs:
         with:
           name: coverage
           path: coverage
+          retention-days: 14
+
+  e2e:
+    name: End-to-end & accessibility tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Playwright
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report
           retention-days: 14
