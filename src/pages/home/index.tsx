@@ -1,47 +1,65 @@
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Button, Paper, Typography } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 import HomeImage from "../../assets/images/home.svg";
 import PageHeader from "../../components/page-header";
+import { DEMO_USER } from "../../constants/user";
 
-const Home = () => {
-  return (
-    <Box display="flex" flexDirection="column" gap={2} padding="20px 24px">
-      <PageHeader
-        title="Boas-vindas, Alexandre Borges!"
-        subtitle="Aqui, você pode visualizar e cadastrar caminhões, além de acompanhar suas localizações no mapa."
+const Home = () => (
+  <Box display="flex" flexDirection="column" gap={2} px={3} py={2.5}>
+    <PageHeader
+      title={`Boas-vindas, ${DEMO_USER.name}!`}
+      subtitle="Aqui, você pode visualizar e cadastrar caminhões, além de acompanhar suas localizações no mapa."
+    />
+    <Paper
+      elevation={2}
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        alignItems: "center",
+        gap: 3,
+        p: 3,
+        borderRadius: 5,
+      }}
+    >
+      <img
+        src={HomeImage}
+        alt="Ilustração de caminhões em um mapa"
+        style={{ maxWidth: "100%", height: "auto", flexShrink: 0 }}
       />
-      <Paper
-        elevation={2}
-        sx={{
-          display: "flex",
-          pl: 2,
-          pt: 2,
-          alignItems: "center",
-          borderRadius: 5,
-          flexWrap: "wrap",
-        }}
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        gap={2}
+        flex={1}
+        textAlign="center"
       >
-        <img
-          src={HomeImage}
-          alt="Home Image"
-          style={{
-            maxWidth: "100%",
-            height: "auto",
-            flexShrink: 0,
-            marginRight: "16px",
-          }}
-        />
-        <Box display="flex" flexDirection="column" gap={2} sx={{ flex: 1 }}>
-          <Typography variant="h5" align="center" fontWeight={600}>
-            Sistema de Cadastro e Localização de Caminhões
-          </Typography>
-          <Typography variant="body1" align="center">
-            Caso seja seu primeiro acesso, recomendamos que inicie cadastrando
-            um novo caminhão.
-          </Typography>
+        <Typography variant="h5" component="h2" fontWeight={600}>
+          Sistema de Cadastro e Localização de Caminhões
+        </Typography>
+        <Typography variant="body1">
+          Caso seja seu primeiro acesso, recomendamos que inicie cadastrando um
+          novo caminhão.
+        </Typography>
+        <Box display="flex" gap={2} flexWrap="wrap" justifyContent="center">
+          <Button
+            component={RouterLink}
+            to="/caminhoes/cadastrar"
+            variant="contained"
+          >
+            Cadastrar caminhão
+          </Button>
+          <Button
+            component={RouterLink}
+            to="/caminhoes/listar"
+            variant="outlined"
+          >
+            Ver caminhões
+          </Button>
         </Box>
-      </Paper>
-    </Box>
-  );
-};
+      </Box>
+    </Paper>
+  </Box>
+);
 
 export default Home;

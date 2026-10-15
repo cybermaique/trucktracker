@@ -1,16 +1,22 @@
-import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
-import NotFound from "./index";
+import NotFound from ".";
 
 describe("NotFound", () => {
-  it("should render the image and text correctly", () => {
-    render(<NotFound />);
+  it("should render the message and a link back to the home page", () => {
+    render(
+      <MemoryRouter>
+        <NotFound />
+      </MemoryRouter>
+    );
 
-    const image = screen.getByAltText(/not found image/i);
-    expect(image).toBeInTheDocument();
-
-    const text = screen.getByText(/Opa, URL não encontrada!/i);
-    expect(text).toBeInTheDocument();
+    expect(
+      screen.getByAltText(/ilustração de página não encontrada/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Opa, URL não encontrada!/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /ir para a página inicial/i })
+    ).toHaveAttribute("href", "/");
   });
 });

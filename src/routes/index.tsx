@@ -1,11 +1,22 @@
-import { HomeOutlined, LocalShipping } from "@mui/icons-material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import AddTruck from "../pages/add-truck/index";
-import Home from "../pages/home";
-import ListTruck from "../pages/list-truck";
-import NotFound from "../pages/not-found";
+import HomeOutlined from "@mui/icons-material/HomeOutlined";
+import LocalShipping from "@mui/icons-material/LocalShipping";
+import { lazy } from "react";
 
-export const routes = [
+// Pages are code-split: each route downloads its own chunk on first visit.
+const Home = lazy(() => import("../pages/home"));
+const ListTruck = lazy(() => import("../pages/list-truck"));
+const AddTruck = lazy(() => import("../pages/add-truck"));
+const NotFound = lazy(() => import("../pages/not-found"));
+
+export interface AppRoute {
+  path: string;
+  title: string;
+  element: React.ReactNode;
+  icon?: React.ReactNode;
+}
+
+export const navigationRoutes: Required<AppRoute>[] = [
   {
     path: "/",
     title: "Página inicial",
@@ -24,9 +35,9 @@ export const routes = [
     icon: <AddRoundedIcon />,
     element: <AddTruck />,
   },
-  {
-    path: "*",
-    title: "Página Não Encontrada",
-    element: <NotFound />,
-  },
+];
+
+export const routes: AppRoute[] = [
+  ...navigationRoutes,
+  { path: "*", title: "Página Não Encontrada", element: <NotFound /> },
 ];

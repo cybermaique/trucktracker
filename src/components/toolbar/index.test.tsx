@@ -1,49 +1,58 @@
-import "@testing-library/jest-dom";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import Toolbar from ".";
+import { DEMO_USER } from "../../constants/user";
+import { useSnackbarStore } from "../../stores/snackbar";
 
-describe("Toolbar Component", () => {
-  it("should render correctly", () => {
-    render(
-      <BrowserRouter>
-        <Toolbar onClickMenu={vi.fn()} />
-      </BrowserRouter>
-    );
+const renderToolbar = (onClickMenu = vi.fn()) => {
+  render(
+    <MemoryRouter>
+      <Toolbar onClickMenu={onClickMenu} />
+    </MemoryRouter>
+  );
+  return { onClickMenu };
+};
 
-    expect(screen.getByRole("img", { name: /inlog/i })).toBeInTheDocument();
-    expect(screen.getByText("ALEXANDRE")).toBeInTheDocument();
-    expect(screen.getByTestId("MenuIcon")).toBeInTheDocument();
-    expect(screen.getByTestId("KeyboardArrowDownIcon")).toBeInTheDocument();
+describe("Toolbar", () => {
+  afterEach(() => {
+    useSnackbarStore.getState().closeSnackbar();
   });
 
-  it("should call onClickMenu when the menu icon is clicked", () => {
-    const onClickMenuMock = vi.fn();
-    render(
-      <BrowserRouter>
-        <Toolbar onClickMenu={onClickMenuMock} />
-      </BrowserRouter>
-    );
+  it("should render the brand linking to the home page and the user", () => {
+    renderToolbar();
 
-    const menuButton = screen.getByTestId("MenuIcon");
-    fireEvent.click(menuButton);
-    expect(onClickMenuMock).toHaveBeenCalled();
+    expect(
+      screen.getByRole("link", { name: /trucktracker — página inicial/i })
+    ).toHaveAttribute("href", "/");
+    expect(screen.getByText(DEMO_USER.name)).toBeInTheDocument();
   });
 
-  it("should call handleLogout when 'Sair' is clicked", () => {
-    render(
-      <BrowserRouter>
-        <Toolbar onClickMenu={vi.fn()} />
-      </BrowserRouter>
+  it("should call onClickMenu when the menu button is clicked", async () => {
+    const { onClickMenu } = renderToolbar();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /abrir ou fechar menu/i })
     );
 
-    const avatarBox = screen.getByText("ALEXANDRE").closest("div");
-    fireEvent.click(avatarBox!);
+    expect(onClickMenu).toHaveBeenCalledTimes(1);
+  });
 
-    const logoutButton = screen.getByText("Sair");
-    fireEvent.click(logoutButton);
+  it("should open the account menu and inform that logout is unavailable", async () => {
+    renderToolbar();
+    const accountButton = screen.getByRole("button", {
+      name: new RegExp(DEMO_USER.name),
+    });
 
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    await userEvent.click(accountButton);
+    expect(accountButton).toHaveAttribute("aria-expanded", "true");
+
+    await userEvent.click(screen.getByRole("menuitem", { name: /sair/i }));
+
+    expect(useSnackbarStore.getState()).toMatchObject({
+      open: true,
+      severity: "info",
+    });
   });
 });

@@ -1,27 +1,45 @@
-import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import Home from ".";
+import { DEMO_USER } from "../../constants/user";
 
-describe("Home Page", () => {
-  it("should render the title and subtitle correctly", () => {
-    render(<Home />);
+const renderHome = () =>
+  render(
+    <MemoryRouter>
+      <Home />
+    </MemoryRouter>
+  );
+
+describe("Home", () => {
+  it("should greet the user", () => {
+    renderHome();
 
     expect(
-      screen.getByText("Boas-vindas, Alexandre Borges!")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Aqui, você pode visualizar e cadastrar caminhões, além de acompanhar suas localizações no mapa."
-      )
+      screen.getByRole("heading", {
+        level: 1,
+        name: `Boas-vindas, ${DEMO_USER.name}!`,
+      })
     ).toBeInTheDocument();
   });
 
-  it("should render the image correctly", () => {
-    render(<Home />);
+  it("should render the illustration", () => {
+    renderHome();
 
-    const img = screen.getByAltText("Home Image");
-    expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute("src", expect.stringContaining("home.svg"));
+    expect(
+      screen.getByAltText("Ilustração de caminhões em um mapa")
+    ).toHaveAttribute("src", expect.stringContaining("home.svg"));
+  });
+
+  it("should link to the main features", () => {
+    renderHome();
+
+    expect(
+      screen.getByRole("link", { name: "Cadastrar caminhão" })
+    ).toHaveAttribute("href", "/caminhoes/cadastrar");
+    expect(screen.getByRole("link", { name: "Ver caminhões" })).toHaveAttribute(
+      "href",
+      "/caminhoes/listar"
+    );
   });
 });

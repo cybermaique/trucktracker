@@ -1,70 +1,66 @@
-import "@testing-library/jest-dom";
-import { cleanup, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import Sidebar from ".";
-import { routes } from "../../routes";
+import { navigationRoutes } from "../../routes";
 import { colors } from "../../styles/colors";
 
+const renderSidebar = (
+  props: React.ComponentProps<typeof Sidebar>,
+  initialEntries = ["/"]
+) =>
+  render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <Sidebar {...props} />
+    </MemoryRouter>
+  );
+
 describe("Sidebar", () => {
-  it("should render menu items correctly", () => {
-    render(
-      <MemoryRouter>
-        <Sidebar open={true} />
-      </MemoryRouter>
-    );
+  it("should render a link for each navigation route", () => {
+    renderSidebar({ open: true });
 
-    const visibleRoutes = routes.filter(({ path }) => path !== "*");
-
-    visibleRoutes.forEach(({ title, path }) => {
-      expect(screen.getByText(title)).toBeInTheDocument();
-
-      const link = screen.getByRole("link", { name: title });
-      const linkHref = new URL(
-        link.getAttribute("href")!,
-        window.location.origin
-      ).pathname;
-
-      const expectedPath = path.startsWith("/") ? path : `/${path}`;
-
-      expect(linkHref).toBe(expectedPath);
+    navigationRoutes.forEach(({ title, path }) => {
+      expect(screen.getByRole("link", { name: title })).toHaveAttribute(
+        "href",
+        path
+      );
     });
   });
 
-  it("should show the title only when the open prop is true", () => {
-    render(
-      <MemoryRouter>
-        <Sidebar open={true} />
-      </MemoryRouter>
-    );
-
-    const visibleRoutes = routes.filter(({ path }) => path !== "*");
-
-    visibleRoutes.forEach(({ title }) => {
+  it("should show the labels only when open, keeping links accessible", () => {
+    const { unmount } = renderSidebar({ open: true });
+    navigationRoutes.forEach(({ title }) => {
       expect(screen.getByText(title)).toBeInTheDocument();
     });
+    unmount();
 
-    cleanup();
-
-    render(
-      <MemoryRouter>
-        <Sidebar open={false} />
-      </MemoryRouter>
-    );
-
-    visibleRoutes.forEach(({ title }) => {
+    renderSidebar({ open: false });
+    navigationRoutes.forEach(({ title }) => {
       expect(screen.queryByText(title)).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: title })).toBeInTheDocument();
     });
   });
 
-  it("should apply the active class to the correct link", () => {
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <Sidebar open={true} />
-      </MemoryRouter>
+  it("should highlight only the active route", () => {
+    renderSidebar({ open: true }, ["/caminhoes/listar"]);
+
+    expect(
+      screen.getByRole("link", { name: "Listagem de Caminhões" })
+    ).toHaveStyle(`background-color: ${colors.brightGray}`);
+    expect(screen.getByRole("link", { name: "Página inicial" })).toHaveStyle(
+      `background-color: ${colors.white}`
+    );
+  });
+
+  it("should notify when a link is clicked", async () => {
+    const onNavigate = vi.fn();
+    renderSidebar({ open: true, onNavigate });
+
+    await userEvent.click(
+      screen.getByRole("link", { name: "Cadastrar Caminhão" })
     );
 
-    const activeLink = screen.getByRole("link", { name: "Página inicial" });
-    expect(activeLink).toHaveStyle(`background-color: ${colors.brightGray}`);
+    expect(onNavigate).toHaveBeenCalled();
   });
 });

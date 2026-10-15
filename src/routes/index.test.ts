@@ -1,32 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { routes } from ".";
+import { navigationRoutes, routes } from ".";
 
-describe("Routes", () => {
-  it("should have the home page route configured correctly", () => {
-    const homeRoute = routes.find((route) => route.path === "/");
-    expect(homeRoute).toBeDefined();
-    expect(homeRoute?.title).toBe("Página inicial");
-    expect(homeRoute?.icon).toBeDefined();
-    expect(homeRoute?.element).toBeDefined();
+describe("routes", () => {
+  it.each([
+    ["/", "Página inicial"],
+    ["/caminhoes/listar", "Listagem de Caminhões"],
+    ["/caminhoes/cadastrar", "Cadastrar Caminhão"],
+  ])("should expose %s as a navigation route", (path, title) => {
+    const route = navigationRoutes.find((item) => item.path === path);
+
+    expect(route).toMatchObject({ path, title });
+    expect(route?.icon).toBeDefined();
+    expect(route?.element).toBeDefined();
   });
 
-  it("should have the truck listing route configured correctly", () => {
-    const truckListRoute = routes.find(
-      (route) => route.path === "/caminhoes/listar"
-    );
-    expect(truckListRoute).toBeDefined();
-    expect(truckListRoute?.title).toBe("Listagem de Caminhões");
-    expect(truckListRoute?.icon).toBeDefined();
-    expect(truckListRoute?.element).toBeDefined();
-  });
-
-  it("should have the add truck route configured correctly", () => {
-    const addTruckRoute = routes.find(
-      (route) => route.path === "/caminhoes/cadastrar"
-    );
-    expect(addTruckRoute).toBeDefined();
-    expect(addTruckRoute?.title).toBe("Cadastrar Caminhão");
-    expect(addTruckRoute?.icon).toBeDefined();
-    expect(addTruckRoute?.element).toBeDefined();
+  it("should register a catch-all route that is not part of the navigation", () => {
+    expect(routes.at(-1)?.path).toBe("*");
+    expect(navigationRoutes.some(({ path }) => path === "*")).toBe(false);
   });
 });

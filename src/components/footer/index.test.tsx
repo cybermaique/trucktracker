@@ -1,36 +1,30 @@
-import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Footer from ".";
+import { AUTHOR } from "../../constants/author";
 
 describe("Footer", () => {
-  it("should render the footer content correctly", () => {
+  it("should render the project and author information", () => {
     render(<Footer />);
 
     expect(
-      screen.getByText("Grupo Inlog - TruckTracker Gestão de Caminhões")
+      screen.getByText("TruckTracker · Gestão de frotas de caminhões")
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Alameda Dr. Carlos de Carvalho, 373 – Centro")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Curitiba – PR, 80410-180")).toBeInTheDocument();
-    expect(
-      screen.getByText("Contato comercial: (41) 98753-9983")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Demais assuntos: (41) 3281-8181")
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: AUTHOR.name })).toHaveAttribute(
+      "href",
+      AUTHOR.github
+    );
   });
 
-  it("should render the icon buttons correctly", () => {
+  it("should link to the source code repository in a new tab", () => {
     render(<Footer />);
 
-    const facebookIcon = screen.getByTestId("FacebookIcon");
-    const instagramIcon = screen.getByTestId("InstagramIcon");
-    const linkedinIcon = screen.getByTestId("LinkedInIcon");
+    const repositoryLink = screen.getByRole("link", {
+      name: /código-fonte no github/i,
+    });
 
-    expect(facebookIcon).toBeInTheDocument();
-    expect(instagramIcon).toBeInTheDocument();
-    expect(linkedinIcon).toBeInTheDocument();
+    expect(repositoryLink).toHaveAttribute("href", AUTHOR.repository);
+    expect(repositoryLink).toHaveAttribute("target", "_blank");
+    expect(repositoryLink).toHaveAttribute("rel", "noopener noreferrer");
   });
 });

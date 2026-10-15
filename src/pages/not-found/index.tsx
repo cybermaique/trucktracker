@@ -1,22 +1,30 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 import NotFoundImage from "../../assets/images/not-found.svg";
 
-const NotFound = () => {
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      gap={10}
-      justifyContent="center"
-      alignItems="center"
-      height="100%"
-    >
-      <img src={NotFoundImage} alt="Not Found Image" />
-      <Typography variant="h5">
-        Opa, URL não encontrada! Volte para a página inicial ou tente novamente.
-      </Typography>
-    </Box>
-  );
-};
+const NotFound = () => (
+  <Box
+    display="flex"
+    flexDirection="column"
+    gap={4}
+    justifyContent="center"
+    alignItems="center"
+    textAlign="center"
+    height="100%"
+    p={3}
+  >
+    <img
+      src={NotFoundImage}
+      alt="Ilustração de página não encontrada"
+      style={{ maxWidth: "100%", height: "auto" }}
+    />
+    <Typography variant="h5" component="h1">
+      Opa, URL não encontrada! Volte para a página inicial ou tente novamente.
+    </Typography>
+    <Button component={RouterLink} to="/" variant="contained">
+      Ir para a página inicial
+    </Button>
+  </Box>
+);
 
 export default NotFound;
