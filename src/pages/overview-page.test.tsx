@@ -24,21 +24,22 @@ describe("Overview page", () => {
     ).toBeInTheDocument();
   });
 
-  it("lists the five nearest trucks, linking to each one on the list", async () => {
+  it("lists the five nearest trucks, linking to their pages", async () => {
     const { user, router } = renderApp("/");
 
     await screen.findByText("Mais próximos de você");
 
     const links = screen
       .getAllByRole("link")
-      .filter((link) => link.getAttribute("href")?.includes("caminhao="));
+      .filter((link) =>
+        /^\/caminhoes\/\d+$/.test(link.getAttribute("href") ?? "")
+      );
     expect(links).toHaveLength(5);
 
     await user.click(links[0]!);
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/caminhoes")
+      expect(router.state.location.pathname).toBe("/caminhoes/1")
     );
-    expect(router.state.location.search).toBe("?caminhao=1");
   });
 
   it("breaks the fleet down by distance band", async () => {

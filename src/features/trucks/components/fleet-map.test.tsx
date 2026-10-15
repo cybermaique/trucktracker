@@ -1,4 +1,4 @@
-import { act, screen } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { lastMapProps, mapInstance } from "@/test/maplibre-mock";
 import { renderWithProviders } from "@/test/render";
@@ -58,7 +58,7 @@ describe("FleetMap", () => {
     expect(screen.queryByTestId("source-radius")).not.toBeInTheDocument();
   });
 
-  it("draws the search radius and the route to the selected truck", () => {
+  it("draws the search radius and the route to the selected truck", async () => {
     renderWithProviders(
       <FleetMap
         trucks={trucks}
@@ -69,16 +69,51 @@ describe("FleetMap", () => {
     );
 
     expect(geojsonOf("source-radius").geometry.type).toBe("Polygon");
+    // Straight line first, replaced by the road route once it loads.
     expect(geojsonOf("source-connection").geometry.coordinates).toEqual([
       [-46.63, -23.55],
       [-47.0608, -22.9056],
     ]);
-    expect(
-      screen.getByRole("dialog", { name: "Detalhes do caminhão" })
-    ).toHaveTextContent("CMP4E21 · 84 km");
-    expect(mapInstance.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({ center: [-47.0608, -22.9056] })
+    const popup = screen.getByRole("dialog", { name: "Detalhes do caminhão" });
+    expect(popup).toHaveTextContent("CMP4E21");
+    expect(popup).toHaveTextContent("84 km em linha reta");
+    expect(popup).toHaveTextContent("Calculando rota por estrada…");
+
+    expect(await within(popup).findByText(/por estrada$/)).toHaveTextContent(
+      /km · .+ por estrada/
     );
+    expect(screen.getByTestId("source-route")).toBeInTheDocument();
+    expect(screen.queryByTestId("source-connection")).not.toBeInTheDocument();
+    expect(mapInstance.fitBounds).toHaveBeenCalledWith(
+      [
+        [-47.0608, -23.55],
+        [-46.63, -22.9056],
+      ],
+      expect.objectContaining({ maxZoom: 11 })
+    );
+  });
+
+  it("links to the truck page from the popup unless disabled", () => {
+    const { unmount } = renderWithProviders(
+      <FleetMap trucks={trucks} origin={origin} selectedTruckId="2" />
+    );
+    expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute(
+      "href",
+      "/caminhoes/2"
+    );
+    unmount();
+
+    renderWithProviders(
+      <FleetMap
+        trucks={trucks}
+        origin={origin}
+        selectedTruckId="2"
+        showDetailsLink={false}
+      />
+    );
+    expect(
+      screen.queryByRole("link", { name: "Ver detalhes" })
+    ).not.toBeInTheDocument();
   });
 
   it("selects a truck clicked on the map", async () => {

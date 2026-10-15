@@ -1,7 +1,7 @@
 {
   "name": "truck-tracker",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Fleet management app: register trucks and track them on an interactive vector map, sorted by distance from you.",
   "author": "Maique Moraes (https://github.com/cybermaique)",
   "license": "MIT",
@@ -42,6 +42,7 @@
     "@vis.gl/react-maplibre": "^8.1.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.57.0",

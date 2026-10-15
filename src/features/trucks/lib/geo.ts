@@ -59,15 +59,38 @@ export const connectionLine = (
 
 export type LngLatBounds = [[number, number], [number, number]];
 
-/** Smallest bounding box containing every point, or `null` when empty. */
+/**
+ * Smallest bounding box containing every point, or `null` when empty.
+ * A loop instead of Math.min(...spread): routes can have tens of thousands
+ * of points, beyond the engine's argument limit.
+ */
 export function boundsOf(points: readonly Coordinates[]): LngLatBounds | null {
-  if (points.length === 0) return null;
+  const [first, ...rest] = points;
+  if (!first) return null;
 
-  const longitudes = points.map((point) => point.longitude);
-  const latitudes = points.map((point) => point.latitude);
-
+  let [west, south, east, north] = [
+    first.longitude,
+    first.latitude,
+    first.longitude,
+    first.latitude,
+  ];
+  for (const { longitude, latitude } of rest) {
+    west = Math.min(west, longitude);
+    east = Math.max(east, longitude);
+    south = Math.min(south, latitude);
+    north = Math.max(north, latitude);
+  }
   return [
-    [Math.min(...longitudes), Math.min(...latitudes)],
-    [Math.max(...longitudes), Math.max(...latitudes)],
+    [west, south],
+    [east, north],
   ];
 }
+
+/** Bounding box of a line string (e.g. a driving route). */
+export const lineBounds = ({ geometry }: Feature<LineString>) =>
+  boundsOf(
+    geometry.coordinates.map(([longitude = 0, latitude = 0]) => ({
+      longitude,
+      latitude,
+    }))
+  );

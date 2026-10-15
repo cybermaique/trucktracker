@@ -6,8 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUserLocation } from "@/features/location/use-user-location";
 import { useCreateTruck } from "@/features/trucks/api/mutations";
 import { TruckForm } from "@/features/trucks/components/truck-form";
-import { truckListUrl } from "@/features/trucks/hooks/use-truck-filters";
 import type { TruckInput } from "@/features/trucks/types";
+import { truckDetailsPath } from "@/lib/site";
 
 export function NewTruckPage() {
   const navigate = useNavigate();
@@ -17,8 +17,8 @@ export function NewTruckPage() {
   const save = async (input: TruckInput) => {
     const truck = await createTruck(input);
     toast.success(`${truck.identifier} foi cadastrado.`);
-    // Lands on the list with the new truck selected on the map.
-    await navigate(truckListUrl(truck.id));
+    // Lands on the new truck's page, with its route from the user.
+    await navigate(truckDetailsPath(truck.id));
   };
 
   return (

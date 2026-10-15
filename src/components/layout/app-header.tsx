@@ -14,10 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { SITE } from "@/lib/site";
+import { CommandMenu } from "./command-menu";
 
 export interface RouteHandle {
-  /** Label shown in the breadcrumb for this route. */
-  crumb: string;
+  /** Breadcrumb label, static or derived from the route loader data. */
+  crumb: string | ((loaderData: unknown) => string);
 }
 
 const hasCrumb = (handle: unknown): handle is RouteHandle =>
@@ -38,16 +39,18 @@ export function AppHeader() {
         <BreadcrumbList>
           {crumbs.map((match, index) => {
             const { crumb } = match.handle as RouteHandle;
+            const label =
+              typeof crumb === "function" ? crumb(match.loaderData) : crumb;
             const isLast = index === crumbs.length - 1;
             return (
               <Fragment key={match.id}>
                 {index > 0 && <BreadcrumbSeparator />}
                 <BreadcrumbItem>
                   {isLast ? (
-                    <BreadcrumbPage>{crumb}</BreadcrumbPage>
+                    <BreadcrumbPage>{label}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link to={match.pathname}>{crumb}</Link>
+                      <Link to={match.pathname}>{label}</Link>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
@@ -58,6 +61,7 @@ export function AppHeader() {
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-1">
+        <CommandMenu />
         <ThemeToggle />
         <Button variant="ghost" size="icon" asChild>
           <a

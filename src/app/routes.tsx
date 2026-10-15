@@ -1,9 +1,18 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { RouteObject, ShouldRevalidateFunction } from "react-router";
+import {
+  data,
+  type LoaderFunctionArgs,
+  type RouteObject,
+  type ShouldRevalidateFunction,
+} from "react-router";
 import { AppLoading, AppShell } from "@/components/layout/app-shell";
 import { RouteError } from "@/components/route-error";
 import { userLocationQueryOptions } from "@/features/location/use-user-location";
 import { trucksQueryOptions } from "@/features/trucks/api/queries";
+
+// Filters live in the query string; changing them must not re-run loaders.
+const onlyOnPathChange: ShouldRevalidateFunction = ({ currentUrl, nextUrl }) =>
+  currentUrl.pathname !== nextUrl.pathname;
 
 /**
  * Each page is a separate chunk, downloaded on first navigation.
@@ -20,14 +29,21 @@ export const createRoutes = (queryClient: QueryClient): RouteObject[] => {
     void queryClient.prefetchQuery(userLocationQueryOptions);
     return null;
   };
-  // Filters live in the query string; changing them must not re-run loaders.
-  const onlyOnPathChange: ShouldRevalidateFunction = ({
-    currentUrl,
-    nextUrl,
-  }) => currentUrl.pathname !== nextUrl.pathname;
+
   const prefetchLocation = () => {
     void queryClient.prefetchQuery(userLocationQueryOptions);
     return null;
+  };
+
+  // Blocking loader: the page needs the truck, and unknown ids become a 404.
+  const loadTruck = async ({ params }: LoaderFunctionArgs) => {
+    void queryClient.prefetchQuery(userLocationQueryOptions);
+    const trucks = await queryClient.ensureQueryData(trucksQueryOptions());
+    const truck = trucks.find(({ id }) => id === params.truckId);
+    if (!truck) {
+      throw data(null, { status: 404, statusText: "Caminhão não encontrado" });
+    }
+    return { identifier: truck.identifier };
   };
 
   return [
@@ -41,6 +57,7 @@ export const createRoutes = (queryClient: QueryClient): RouteObject[] => {
           index: true,
           handle: { crumb: "Visão geral" },
           loader: prefetchFleet,
+          shouldRevalidate: onlyOnPathChange,
           lazy: {
             Component: async () =>
               (await import("@/pages/overview-page")).OverviewPage,
@@ -53,6 +70,7 @@ export const createRoutes = (queryClient: QueryClient): RouteObject[] => {
             {
               index: true,
               loader: prefetchFleet,
+              shouldRevalidate: onlyOnPathChange,
               lazy: {
                 Component: async () =>
                   (await import("@/pages/trucks-page")).TrucksPage,
@@ -66,6 +84,21 @@ export const createRoutes = (queryClient: QueryClient): RouteObject[] => {
               lazy: {
                 Component: async () =>
                   (await import("@/pages/new-truck-page")).NewTruckPage,
+              },
+            },
+            {
+              path: ":truckId",
+              loader: loadTruck,
+              // Renders inside the app shell, keeping navigation available.
+              errorElement: <RouteError />,
+              handle: {
+                crumb: (loaderData: unknown) =>
+                  (loaderData as { identifier?: string } | undefined)
+                    ?.identifier ?? "Caminhão",
+              },
+              lazy: {
+                Component: async () =>
+                  (await import("@/pages/truck-details-page")).TruckDetailsPage,
               },
             },
           ],

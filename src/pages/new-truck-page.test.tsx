@@ -50,7 +50,7 @@ describe("New truck page", () => {
     );
   });
 
-  it("registers a truck and opens it on the list", async () => {
+  it("registers a truck and opens its page", async () => {
     const { user, router } = await renderNewTruckPage();
 
     await user.type(
@@ -85,9 +85,8 @@ describe("New truck page", () => {
       coordinates: { latitude: -22.90685, longitude: -43.1729 },
     });
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe("/caminhoes")
+      expect(router.state.location.pathname).toBe(`/caminhoes/${created?.id}`)
     );
-    expect(router.state.location.search).toBe(`?caminhao=${created?.id}`);
   });
 
   it("pre-fills the location with the device position", async () => {

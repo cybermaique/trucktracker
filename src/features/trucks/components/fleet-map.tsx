@@ -12,16 +12,20 @@ import {
   type MapRef,
 } from "@vis.gl/react-maplibre";
 import type { GeoJSONSource } from "maplibre-gl";
-import { Maximize2 } from "lucide-react";
+import { ArrowRight, Maximize2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import { useTheme } from "@/components/theme/theme-provider";
 import { Button } from "@/components/ui/button";
 import type { UserLocation } from "@/features/location/use-user-location";
-import { formatDistance } from "@/lib/format";
+import { useDrivingRoute } from "@/features/routing/use-driving-route";
+import { formatDistance, formatDuration } from "@/lib/format";
+import { truckDetailsPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import {
   boundsOf,
   connectionLine,
+  lineBounds,
   radiusPolygon,
   trucksToFeatureCollection,
 } from "../lib/geo";
@@ -32,7 +36,7 @@ import { TruckAvatar } from "./truck-avatar";
 const BRAND = "#2563eb";
 const HIGHLIGHT = "#f97316";
 const FIT_PADDING = 56;
-const SELECTED_ZOOM = 9;
+const SELECTED_ZOOM = 11;
 
 const clusterLayer: LayerProps = {
   id: "clusters",
@@ -83,6 +87,8 @@ interface FleetMapProps {
   onSelectTruck?: (id: string | null) => void;
   /** Draws the search radius around the user when set. */
   radiusKm?: number | null;
+  /** Shows a link to the truck page in the popup. */
+  showDetailsLink?: boolean;
   className?: string;
 }
 
@@ -92,6 +98,7 @@ export function FleetMap({
   selectedTruckId = null,
   onSelectTruck,
   radiusKm = null,
+  showDetailsLink = true,
   className,
 }: FleetMapProps) {
   const mapRef = useRef<MapRef>(null);
@@ -104,24 +111,53 @@ export function FleetMap({
     ...(origin ? [origin.coordinates] : []),
   ]);
 
-  // A truck selected on arrival (shared URL) starts centered; otherwise the
-  // whole fleet is framed. Later selections fly there (effect below).
-  const initialView = selectedTruck
-    ? { ...selectedTruck.coordinates, zoom: SELECTED_ZOOM }
-    : fleetBounds
-      ? { bounds: fleetBounds, fitBoundsOptions: { padding: FIT_PADDING } }
-      : { latitude: -15, longitude: -50, zoom: 3.2 };
+  // Road route from the user to the selected truck; the straight line is
+  // shown while it loads or if the routing service is unavailable.
+  const route = useDrivingRoute(
+    origin?.coordinates,
+    selectedTruck?.coordinates
+  );
+
+  // Frames the user and the selected truck (or the whole fleet).
+  const selectionBounds = selectedTruck
+    ? boundsOf([
+        selectedTruck.coordinates,
+        ...(origin ? [origin.coordinates] : []),
+      ])
+    : null;
+  const fitOptions = { padding: FIT_PADDING, maxZoom: SELECTED_ZOOM };
+  const viewBounds = selectionBounds ?? fleetBounds;
+  const initialView = viewBounds
+    ? { bounds: viewBounds, fitBoundsOptions: fitOptions }
+    : { latitude: -15, longitude: -50, zoom: 3.2 };
 
   useEffect(() => {
     if (!selectedTruck) return;
-    const { longitude, latitude } = selectedTruck.coordinates;
-    const map = mapRef.current;
-    map?.flyTo({
-      center: [longitude, latitude],
-      zoom: Math.max(map.getZoom(), SELECTED_ZOOM),
-      duration: 1200,
-    });
-  }, [selectedTruck]);
+    const bounds = boundsOf([
+      selectedTruck.coordinates,
+      ...(origin ? [origin.coordinates] : []),
+    ]);
+    if (bounds) {
+      mapRef.current?.fitBounds(bounds, {
+        padding: FIT_PADDING,
+        maxZoom: SELECTED_ZOOM,
+        duration: 1200,
+      });
+    }
+  }, [selectedTruck, origin]);
+
+  // Roads rarely follow the straight line: re-frame once the route arrives.
+  const routeGeometry = route.data?.geometry;
+  useEffect(() => {
+    const bounds = routeGeometry && lineBounds(routeGeometry);
+    if (bounds) {
+      mapRef.current?.fitBounds(bounds, {
+        padding: FIT_PADDING,
+        maxZoom: SELECTED_ZOOM,
+        duration: 800,
+      });
+    }
+  }, [routeGeometry]);
 
   const fitFleet = () => {
     if (fleetBounds) {
@@ -201,7 +237,24 @@ export function FleetMap({
           </Source>
         )}
 
-        {origin && selectedTruck && (
+        {origin && selectedTruck && routeGeometry && (
+          <Source id="route" type="geojson" data={routeGeometry}>
+            <Layer
+              id="route-casing"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{ "line-color": "#ffffff", "line-width": 7 }}
+            />
+            <Layer
+              id="route-line"
+              type="line"
+              layout={{ "line-join": "round", "line-cap": "round" }}
+              paint={{ "line-color": HIGHLIGHT, "line-width": 4 }}
+            />
+          </Source>
+        )}
+
+        {origin && selectedTruck && !routeGeometry && (
           <Source
             id="connection"
             type="geojson"
@@ -271,18 +324,37 @@ export function FleetMap({
             // Keep focus where the user acted (e.g. the table row).
             focusAfterOpen={false}
             onClose={() => onSelectTruck?.(null)}
-            maxWidth="280px"
+            maxWidth="300px"
           >
-            <div className="flex items-center gap-3 pr-4">
+            <div className="flex items-start gap-3 pr-4">
               <TruckAvatar truck={selectedTruck} className="size-10" />
-              <div className="min-w-0 text-sm">
+              <div className="min-w-0 space-y-0.5 text-sm">
                 <p className="truncate font-semibold">
                   {selectedTruck.identifier}
                 </p>
-                <p className="text-muted-foreground">
-                  {selectedTruck.licensePlate} ·{" "}
-                  {formatDistance(selectedTruck.distanceKm)}
+                <p className="font-mono text-xs text-muted-foreground">
+                  {selectedTruck.licensePlate}
                 </p>
+                <p className="text-muted-foreground">
+                  {formatDistance(selectedTruck.distanceKm)} em linha reta
+                </p>
+                {origin && (
+                  <p className="font-medium" aria-live="polite">
+                    {route.isPending && "Calculando rota por estrada…"}
+                    {route.isError && "Rota por estrada indisponível"}
+                    {route.data &&
+                      `${formatDistance(route.data.distanceKm)} · ${formatDuration(route.data.durationMinutes)} por estrada`}
+                  </p>
+                )}
+                {showDetailsLink && (
+                  <Link
+                    to={truckDetailsPath(selectedTruck.id)}
+                    className="inline-flex items-center gap-1 pt-1 font-medium text-primary hover:underline"
+                  >
+                    Ver detalhes
+                    <ArrowRight className="size-3.5" aria-hidden />
+                  </Link>
+                )}
               </div>
             </div>
           </Popup>

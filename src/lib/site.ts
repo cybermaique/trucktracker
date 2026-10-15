@@ -14,3 +14,6 @@ export const ROUTES = {
   trucks: "/caminhoes",
   newTruck: "/caminhoes/novo",
 } as const;
+
+export const truckDetailsPath = (truckId: string) =>
+  `${ROUTES.trucks}/${encodeURIComponent(truckId)}`;
