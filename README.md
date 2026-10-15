@@ -1,144 +1,159 @@
-# TruckTracker - Desafio Inlog 🚀
+<div align="center">
 
-## Descrição do Projeto 📜
+# 🚚 TruckTracker
 
-Este projeto foi desenvolvido como parte do desafio técnico para a vaga de Frontend Developer na Inlog. O objetivo foi criar uma aplicação React com duas páginas principais:
+**Fleet management web app: register trucks and track them on an interactive map, sorted by distance from you.**
 
-1. **Listagem de Caminhões**: Exibe uma lista de veículos ordenados pela proximidade do usuário, com um mapa interativo (usando Leaflet) que mostra a localização de cada veículo.
-2. **Adição de Caminhões**: Permite ao usuário cadastrar novos veículos, incluindo informações básicas e a localização (coordenadas).
-   O projeto foi desenvolvido com React, TypeScript, e utiliza bibliotecas como Leaflet para mapas, Axios para requisições à API, e React Testing Library para testes automatizados.
+[![CI](https://github.com/cybermaique/trucktracker/actions/workflows/ci.yml/badge.svg)](https://github.com/cybermaique/trucktracker/actions/workflows/ci.yml)
+[![Deploy](https://github.com/cybermaique/trucktracker/actions/workflows/deploy.yml/badge.svg)](https://github.com/cybermaique/trucktracker/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
 
----
+[**Live demo**](https://cybermaique.github.io/trucktracker/) · [Features](#-features) · [Architecture](#-architecture) · [Getting started](#-getting-started) · [Leia em português 🇧🇷](./README.pt-BR.md)
 
-## Pré-visualização 🎥
+![Truck list with interactive map](docs/screenshots/trucks-list.png)
 
-### Home
+</div>
 
-![alt text](home-image.png)
+## 📌 About
 
-### Listagem de Caminhões
+TruckTracker started as the take-home challenge for a **Frontend Developer position at [Inlog](https://github.com/weareinlog/Desafio-Inlog---Vaga-Frontend-Developer)**, which I passed. The brief asked for two pages: a truck list sorted by proximity to the user, with every truck pinned on a map, and a form to register new trucks. It also asked for automated tests covering the list, the form and the fake API.
 
-![alt text](trucks-list.png)
+I went beyond the brief with filters, edit/delete, image upload, PDF export, and a migration from CRA to Vite. I later revisited the project to bring it up to production standards: a CI pipeline, a live demo, accessibility and responsive design, stricter typing, broader tests and zero known vulnerabilities.
 
-### Cadastro de Veículos
+> The app has no real backend. A [MirageJS](https://miragejs.com/) server intercepts requests in the browser and keeps the data in memory, so the deployed demo is fully interactive. Data resets when you reload the page.
 
-![alt text](register-trucks.png)
+## ✨ Features
 
-### GIF Sidebar, Toolbar e Home
+|                                |                                                                                                                                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🗺️ **Interactive map**         | Every truck is pinned on a Leaflet/OpenStreetMap map. Clicking a row flies to that truck; clicking a pin shows its details.                                                                                  |
+| 📍 **Sorted by proximity**     | Distances come from the user's position (Haversine formula). If geolocation is denied, the app falls back to a default location instead of rendering an empty page.                                          |
+| 🔎 **Filters & sorting**       | Filter by license plate, tracker serial number or maximum distance, and toggle ascending/descending distance.                                                                                                |
+| ➕ **Registration form**       | React Hook Form + Zod validation, live license plate formatting (both the old `ABC-1234` and Mercosul `ABC1D23` formats), location picked on the map or from the device, and an optional photo (up to 2 MB). |
+| ✏️ **Edit & delete**           | Edit with the same validation rules, and delete behind a confirmation dialog. The list is revalidated through SWR.                                                                                           |
+| 📄 **PDF report**              | Exports the filtered list to PDF. jsPDF is loaded on demand, so it isn't part of the initial bundle.                                                                                                         |
+| 📱 **Responsive & accessible** | Mobile drawer navigation, keyboard-operable table rows, labelled controls, a skip link and semantic landmarks.                                                                                               |
 
-![alt text](home.gif)
+<details>
+<summary><strong>📸 More screenshots</strong></summary>
 
-### GIF Listagem
+| Registration                                           | Edit with validation                           |
+| ------------------------------------------------------ | ---------------------------------------------- |
+| ![Register truck](docs/screenshots/register-truck.png) | ![Edit truck](docs/screenshots/edit-truck.png) |
 
-![alt text](list-trucks.gif)
+| Home                               | Mobile                                           | Mobile navigation                                |
+| ---------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| ![Home](docs/screenshots/home.png) | ![Mobile list](docs/screenshots/mobile-list.png) | ![Mobile menu](docs/screenshots/mobile-menu.png) |
 
-### GIF Cadastro
+</details>
 
-![alt text](register.gif)
+## 🛠 Tech stack
 
-### GIF Exportar Relatório
+| Concern      | Choice                                                                        |
+| ------------ | ----------------------------------------------------------------------------- |
+| UI           | React 19, TypeScript (strict), MUI 6, Emotion                                 |
+| Build        | Vite 6, code splitting with lazy routes and vendor chunks                     |
+| Server state | SWR (caching, revalidation, mutations)                                        |
+| Client state | Zustand (global loading and notifications)                                    |
+| Forms        | React Hook Form + Zod                                                         |
+| Maps         | Leaflet + React Leaflet (OpenStreetMap tiles)                                 |
+| Fake API     | MirageJS                                                                      |
+| Testing      | Vitest, React Testing Library, user-event, jest-dom                           |
+| Quality      | ESLint (typescript-eslint, react-hooks), Prettier, GitHub Actions, Dependabot |
 
-![alt text](report.gif)
+## 🏗 Architecture
 
----
+The pages follow the **container/presentational** pattern. Data fetching, derived state and side effects live in hooks (`src/containers`), and components only render what they receive. This keeps the UI easy to test and the business rules easy to find.
 
-## Coverage 🧪
+```mermaid
+flowchart LR
+  subgraph UI
+    Page["Pages<br/>(list-truck, add-truck)"] --> Components["Presentational<br/>components"]
+  end
+  Page --> Containers["Container hooks<br/>useListTruck · useTruckFilters · useActionsTable"]
+  Containers --> Services["Services<br/>useGetTrucks · addTruck · updateTruck · deleteTruck"]
+  Containers --> Zustand[("Zustand<br/>loading · snackbar")]
+  Containers --> Geo["useUserLocation<br/>(with fallback)"]
+  Services -- "SWR cache" --> API["fetch /api/*"]
+  API --> Mirage[("MirageJS<br/>in-memory DB")]
+```
 
-![alt text](tests-coverage.png)
+```text
+src/
+├── api/          # SWR fetcher
+├── components/   # Presentational components (one folder per component, tests alongside)
+├── constants/    # API routes, map, table and app constants
+├── containers/   # Page-level hooks holding state and business rules
+├── hooks/        # Reusable hooks (geolocation, pagination)
+├── interfaces/   # Domain types
+├── mirage/       # Fake REST API
+├── pages/        # Route components (lazy loaded)
+├── services/     # API calls
+├── stores/       # Zustand stores
+├── tests/        # Test setup and helpers
+├── utils/        # Pure functions (distance, formatting, PDF report)
+└── validation/   # Zod schemas
+```
 
----
+### Technical decisions
 
-## Funcionalidades ✨
+- **SWR for server state, Zustand for UI state.** The challenge suggested Redux, and an early version stored the API response in a Redux slice. That duplicated what SWR already caches, so I removed it: SWR owns server data, and a tiny Zustand store holds the global snackbar and loading overlay.
+- **Derived state with `useMemo`.** Sorting and filtering are computed from the API data, the filters and the user's location. They are not copied into component state.
+- **Resilient geolocation.** Distances need a reference point. If the user denies permission (or the API is missing), the app warns them and uses São Paulo as the reference, so the list still renders.
+- **Mirage in every environment.** It lets the static GitHub Pages build behave like a real app. Test runs use Mirage's `test` environment: no seed data and no artificial latency.
+- **Performance.** Routes are lazy loaded, vendors are split into cache-friendly chunks, and jsPDF (~400 kB) is only downloaded when a report is requested.
 
-- **Listagem de Veículos**:
-  - Lista de veículos ordenada pela proximidade do usuário.
-  - Mapa interativo com pins indicando a localização de cada veículo.
-  - Ao clicar em uma linha da lista, o mapa é movido diretamente para a localização daquele caminhão.
-  - Ao clicar no pin de um caminhão no mapa, é exibido um popup com as informações mais importantes do caminhão.
-  - Integração com a API para buscar os dados dos veículos.
-  - **Filtro de Veículos**: Possibilidade de filtrar os veículos por placa, número de rastreador ou distância.
-- **Cadastro de Veículos**:
-  - Formulário para cadastrar novos veículos.
-  - Campos para identificação, placa, número de série do rastreador e coordenadas (latitude e longitude).
-  - Validação de campos e feedback visual.
-  - **Upload de Imagem**: Funcionalidade de upload de imagem para cada caminhão cadastrado, com a exibição da foto na listagem.
-  - **Localização do Usuário**: Captura automática da localização do usuário no cadastro de veículos, facilitando o preenchimento do campo de localização.
-- **Testes Automatizados**:
-  - Testes para garantir que a listagem de veículos e o formulário de cadastro funcionem corretamente.
-  - Testes de integração com a API.
-- **Relatórios**:
-  - **Botão para Baixar Relatório**: Permite ao usuário baixar a listagem de veículos em formato PDF.
+## 🚀 Getting started
 
----
+**Requirements:** Node.js 20+ (22 LTS recommended, see `.nvmrc`) and [pnpm](https://pnpm.io/) 10.
 
-## Bônus Implementados 🎁
+```bash
+git clone https://github.com/cybermaique/trucktracker.git
+cd trucktracker
+pnpm install
+pnpm dev
+```
 
-- **Filtro de Veículos**: Adicionei um campo de busca que permite filtrar os veículos por placa, número de rastreador ou distância, facilitando a navegação pela lista.
-- **Upload e Listagem de Imagem**: No formulário de cadastro, implementei a funcionalidade de upload de imagem para permitir o envio de uma foto do caminhão. A imagem também aparece na coluna imagem na listagem dos caminhões.
-- **Localização do Usuário**: Na página de cadastro de caminhões, adicionei uma funcionalidade que captura automaticamente a localização atual do usuário e a exibe no mapa, facilitando o preenchimento do campo de localização e melhorando a experiência do usuário.
-- **Edição e Exclusão de Caminhões**: Implementei a possibilidade de editar e excluir caminhões, com a criação de serviços e endpoints no MirageJS para simulação de API. Também foram implementados modais de edição e exclusão, juntamente com testes unitários para garantir o correto funcionamento dessas funcionalidades.
-- **Interface Melhorada**: Implementei uma **toolbar** para facilitar a navegação, um **footer** com informações adicionais e uma **sidebar retrátil** para melhorar a organização e acessibilidade do layout.
-- **Estrutura do Keycloak**: Preparei a estrutura do Keycloak para uma futura integração de autenticação e autorização no projeto, garantindo que a aplicação esteja pronta para ser escalada com segurança.
-- **Migração de CRA para Vite**: Realizei a migração do projeto de **Create React App (CRA)** para **Vite**. A migração traz melhorias significativas, como tempos de build mais rápidos, inicialização mais ágil e uma configuração mais flexível, melhorando o desempenho geral da aplicação.
-- **Instalação e Configuração do SonarQube**: Instalei e configurei o SonarQube no projeto para garantir a qualidade do código. Durante o desenvolvimento, fiz análises diárias no SonarQube para identificar e corrigir problemas de qualidade e garantir os melhores resultados possíveis no código.
-- **Botão para Baixar Relatório**: Adicionei um botão na tela de listagem que permite ao usuário baixar um relatório contendo a listagem dos caminhões em formato PDF.
+The app runs at `http://localhost:5173`. Allow location access to see real distances.
 
----
+### Scripts
 
-## Observações ⚠️
+| Command                             | Description                                              |
+| ----------------------------------- | -------------------------------------------------------- |
+| `pnpm dev`                          | Start the dev server                                     |
+| `pnpm build`                        | Type-check and build for production                      |
+| `pnpm preview`                      | Serve the production build locally                       |
+| `pnpm test`                         | Run the test suite once                                  |
+| `pnpm test:watch`                   | Run tests in watch mode                                  |
+| `pnpm test:coverage`                | Run tests with a coverage report (`coverage/index.html`) |
+| `pnpm lint` / `pnpm lint:fix`       | Lint the codebase                                        |
+| `pnpm format` / `pnpm format:check` | Format with Prettier                                     |
+| `pnpm typecheck`                    | Run the TypeScript compiler                              |
+| `pnpm validate`                     | Run everything CI runs                                   |
 
-- **Uso do Redux**: Embora o Redux tenha sido utilizado no projeto para gerenciar o estado global dos caminhões após as requisições à API, esse gerenciamento não é essencial para a aplicação. O Redux foi implementado como parte do desafio técnico, mas sua utilização pode ser vista mais como um teste e um extra, pois não achei necessário a utilização completo do mesmo devido ao tamanho atual do projeto.
-- **Gerenciamento do Estado Global**: Para gerenciar o estado global do snackbar e do loading, foi utilizado o **Zustand**, que proporciona uma abordagem mais leve e eficiente para esses casos de uso, sendo uma solução mais adequada e simples para o gerenciamento de estados localizados na aplicação.
-- **Responsividade**: Não foquei no design responsivo para esse projeto, pois o tempo para o desafio foi um fator limitante. Meu principal foco foi garantir que as funcionalidades principais, como a listagem de caminhões, o cadastro de veículos e os testes unitários, estivessem bem implementadas. Caso o prazo fosse maior, eu teria dedicado mais tempo para aprimorar a responsividade e garantir que a aplicação fosse totalmente adaptável a diferentes dispositivos.
-- **Padrão Smart Container**: Nos últimos commits, apliquei o padrão smart container na listagem de caminhões. Este padrão foi adotado porque, com o crescimento da aplicação, é importante separar a lógica de negócio e o gerenciamento de estado dos componentes de apresentação. Isso facilita a manutenção do código, criação de testes e melhora a escalabilidade e torna a aplicação mais modular. Com o tempo, esse padrão vai ajudar a reduzir a complexidade e facilitar a inclusão de novas funcionalidades sem grandes alterações na estrutura do projeto.
+## 🧪 Testing & quality
 
-Com isso, em um projeto real, eu teria iniciado aplicando tanto a responsividade quanto o padrão smart container desde o começo.
+- **Unit and integration tests** with Vitest and React Testing Library. Page tests render the real components against the Mirage API, with geolocation stubbed, and assert on what the user sees: sorting, filtering, editing, deleting, exporting and form validation.
+- **Coverage thresholds** (90% statements and lines, 80% branches) are enforced. The current suite covers about 97% of lines.
+- **CI** on every push and pull request: lint → format check → type check → tests with coverage → production build.
+- **Continuous deployment** to GitHub Pages on every push to `main`.
+- **Dependabot** keeps npm packages and GitHub Actions up to date. `pnpm audit` reports no known vulnerabilities.
 
----
+## 🗺 Roadmap
 
-## Tecnologias Utilizadas 🛠️
+- [ ] Real backend and authentication (OIDC/Keycloak)
+- [ ] End-to-end tests with Playwright
+- [ ] Marker clustering for large fleets
+- [ ] Persist filters and pagination in the URL
+- [ ] Internationalization (pt-BR / en)
 
-- **React**: Biblioteca principal para construção da interface.
-- **TypeScript**: Para tipagem estática e melhor organização do código.
-- **Vite**: Build tool rápida para desenvolvimento e produção.
-- **MUI (Material UI)**: Biblioteca de componentes para estilização moderna.
-- **Emotion**: Biblioteca de CSS-in-JS usada pelo MUI.
-- **Leaflet & React Leaflet**: Biblioteca para exibição de mapas interativos.
-- **Axios**: Para requisições HTTP à API.
-- **SWR**: Gerenciamento de estado assíncrono para requisições e cache de dados.
-- **Redux**: Para gerenciamento global de estado e armazenamento dos dados dos caminhões vindo da API.
-- **React Hook Form**: Gerenciamento de formulários com validação eficiente.
-- **Zod**: Biblioteca de validação de schemas integrada ao React Hook Form.
-- **UUID**: Para geração de identificadores únicos universais.
-- **Zustand**: Gerenciamento de estado leve e eficiente.
-- **MirageJS**: Simulação de API para desenvolvimento sem backend.
-- **Keycloak JS**: Gerenciamento de autenticação e autorização.
-- **JSPDF & JSPDF-Autotable**: Geração de PDFs, incluindo tabelas formatadas.
-- **React Router**: Para gerenciamento de rotas.
-- **Styled Components**: Para estilização dos componentes.
-- **Day.js**: Biblioteca de manipulação de datas que foi escolhida ao invés do Date-fns por ser mais leve e ter uma API similar ao moment.js, oferecendo uma experiência de uso mais simples e rápida, além de ser recomendada pela documentação do MUI.
-- **PNPM**: Gerenciador de pacotes eficiente e rápido, com as seguintes vantagens:
-  - Instalação de dependências mais rápida, utilizando links simbólicos e economizando espaço em disco.
-  - Cache global que melhora a performance e reduz o tempo de download entre projetos.
-  - Verificação rigorosa de integridade dos pacotes, garantindo mais segurança e estabilidade no ambiente de desenvolvimento.
-  - Menor uso de espaço no disco em comparação com o NPM, especialmente em projetos múltiplos com dependências comuns.
+## 🙏 Acknowledgments
 
----
+Thanks to **Danielle Capello de Oliveira** and **Alexandre Borges** for their contributions.
 
-### Testes e Qualidade de Código 🧪
+## 📄 License
 
-- **Vitest**: Framework de testes unitários e integração.
-- **React Testing Library**: Testes focados na usabilidade de componentes.
-- **Jest DOM**: Extensões do Jest para testar o DOM de maneira mais intuitiva.
-- **Testing Library User Event**: Simulação interativa de eventos do usuário.
-- **ESLint**: Linter para manter a padronização do código.
-- **Prettier**: Formatação automática do código.
-- **Sonar Scanner**: Análise de código para identificar bugs e vulnerabilidades.
-
----
-
-## Agradecimentos 🙏
-
-Gostaria de expressar minha gratidão a: **Danielle Capello de Oliveira** e **Alexandre Borges**
-
-Muito obrigado pela contribuição de ambos!
+[MIT](./LICENSE) © [Maique Moraes](https://github.com/cybermaique)
