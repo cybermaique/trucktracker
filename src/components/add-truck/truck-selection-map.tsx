@@ -1,3 +1,5 @@
+import "leaflet/dist/leaflet.css";
+import { LatLngLiteral } from "leaflet";
 import { useEffect } from "react";
 import {
   MapContainer,
@@ -6,53 +8,42 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
+import { DEFAULT_LOCATION, TILE_LAYER } from "../../constants/map";
 import truckIcon from "../../utils/map/truck-icon";
 
-interface TruckMapProps {
-  position: { lat: number; lng: number } | null;
-  setPosition: (position: { lat: number; lng: number }) => void;
-  setValue: (field: string, value: number) => void;
+interface TruckSelectionMapProps {
+  position: LatLngLiteral | null;
+  onSelect: (position: LatLngLiteral) => void;
 }
 
-const LocationMarker = ({ position, setPosition, setValue }: TruckMapProps) => {
+const LocationMarker = ({ position, onSelect }: TruckSelectionMapProps) => {
   const map = useMap();
 
   useEffect(() => {
-    if (position && map) {
-      map.setView([position.lat, position.lng], map.getZoom());
-    }
+    if (position) map.setView(position, map.getZoom());
   }, [position, map]);
 
   useMapEvents({
-    click(e) {
-      setValue("latitude", e.latlng.lat);
-      setValue("longitude", e.latlng.lng);
-      setPosition(e.latlng);
-    },
+    click: (event) => onSelect(event.latlng),
   });
 
   return position ? <Marker position={position} icon={truckIcon} /> : null;
 };
 
-const TruckSelectionMap = ({
-  position,
-  setPosition,
-  setValue,
-}: TruckMapProps) => {
-  return (
-    <MapContainer
-      center={position || [-25.43247, -49.27845]}
-      zoom={13}
-      style={{ height: 300, width: "100%" }}
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <LocationMarker
-        position={position}
-        setPosition={setPosition}
-        setValue={setValue}
-      />
-    </MapContainer>
-  );
-};
+const TruckSelectionMap = ({ position, onSelect }: TruckSelectionMapProps) => (
+  <MapContainer
+    center={
+      position ?? {
+        lat: DEFAULT_LOCATION.latitude,
+        lng: DEFAULT_LOCATION.longitude,
+      }
+    }
+    zoom={13}
+    style={{ height: 320, width: "100%", borderRadius: 8 }}
+  >
+    <TileLayer url={TILE_LAYER.url} attribution={TILE_LAYER.attribution} />
+    <LocationMarker position={position} onSelect={onSelect} />
+  </MapContainer>
+);
 
 export default TruckSelectionMap;

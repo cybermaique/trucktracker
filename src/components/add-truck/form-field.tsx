@@ -1,49 +1,43 @@
 import { TextField } from "@mui/material";
-import { Controller } from "react-hook-form";
+import { Control, Controller, FieldPath, FieldValues } from "react-hook-form";
 import { formatLicensePlate } from "../../utils/list-truck";
 
-interface TruckFormFieldProps {
-  name: string;
+interface TruckFormFieldProps<T extends FieldValues> {
+  name: FieldPath<T>;
   label: string;
-  control: any;
-  errors: any;
+  control: Control<T>;
   isLicensePlate?: boolean;
   maxLength?: number;
+  required?: boolean;
 }
 
-const TruckFormField = ({
+const TruckFormField = <T extends FieldValues>({
   name,
   label,
   control,
-  errors,
   isLicensePlate,
   maxLength,
-}: TruckFormFieldProps) => {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => (
-        <TextField
-          {...field}
-          label={label}
-          error={!!errors[name]}
-          helperText={errors[name]?.message}
-          onChange={(e) => {
-            const value = isLicensePlate
-              ? formatLicensePlate(e.target.value)
-              : e.target.value;
-            field.onChange(value);
-          }}
-          slotProps={{
-            htmlInput: {
-              maxLength,
-            },
-          }}
-        />
-      )}
-    />
-  );
-};
+  required,
+}: TruckFormFieldProps<T>) => (
+  <Controller
+    name={name}
+    control={control}
+    render={({ field, fieldState: { error } }) => (
+      <TextField
+        {...field}
+        value={field.value ?? ""}
+        label={label}
+        required={required}
+        error={Boolean(error)}
+        helperText={error?.message}
+        onChange={(event) => {
+          const { value } = event.target;
+          field.onChange(isLicensePlate ? formatLicensePlate(value) : value);
+        }}
+        slotProps={{ htmlInput: { maxLength } }}
+      />
+    )}
+  />
+);
 
 export default TruckFormField;

@@ -1,29 +1,40 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import PhotoCameraOutlined from "@mui/icons-material/PhotoCameraOutlined";
 import { Box, Button, Container, Paper, Typography } from "@mui/material";
-import "leaflet/dist/leaflet.css";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { LatLngLiteral } from "leaflet";
+import { useCallback, useEffect, useState } from "react";
+import { DefaultValues, useForm } from "react-hook-form";
 import useSWRMutation from "swr/mutation";
+import truckPlaceholder from "../../assets/images/truck-placeholder.jpg";
 import TruckFormField from "../../components/add-truck/form-field";
 import LocationButton from "../../components/add-truck/location-button";
 import TruckSelectionMap from "../../components/add-truck/truck-selection-map";
 import PageHeader from "../../components/page-header";
-import { DEFAULT_TRUCK_IMAGE } from "../../constants/table";
+import { API_ROUTES } from "../../constants/api";
+import { PAPER_STYLES } from "../../constants/styles";
 import useUserLocation from "../../hooks/use-user-location";
 import { NewTruck } from "../../interfaces/truck";
 import { addTruck } from "../../services/post-truck";
 import { useLoadingStore } from "../../stores/loading";
 import { useSnackbarStore } from "../../stores/snackbar";
 import { convertFileToBase64 } from "../../utils/add-truck";
-import truckSchema from "../../validation/truck-schema";
+import truckSchema, { TruckFormValues } from "../../validation/truck-schema";
+
+const MAX_IMAGE_SIZE_MB = 2;
+const ACCEPTED_IMAGE_TYPES = ".jpg,.jpeg,.png,.webp";
+
+const EMPTY_FORM: DefaultValues<TruckFormValues> = {
+  identifier: "",
+  license_plate: "",
+  tracker_serial_number: "",
+};
 
 const AddTruck = () => {
   const showSnackbar = useSnackbarStore((state) => state.showSnackbar);
-  const { setLoading } = useLoadingStore();
-  const [imagePreview, setImagePreview] = useState<string>(DEFAULT_TRUCK_IMAGE);
-
-  // Cenário hipotético para acessar os caminhões do Redux
-  // const trucks = useSelector((state: RootState) => state.trucks.trucks);
+  const setLoading = useLoadingStore((state) => state.setLoading);
+  const [image, setImage] = useState<string | null>(null);
+  const [position, setPosition] = useState<LatLngLiteral | null>(null);
+  const { location: userLocation } = useUserLocation();
 
   const {
     control,
@@ -31,41 +42,53 @@ const AddTruck = () => {
     setValue,
     reset,
     formState: { errors },
-  } = useForm({ resolver: zodResolver(truckSchema) });
+  } = useForm<TruckFormValues>({
+    resolver: zodResolver(truckSchema),
+    defaultValues: EMPTY_FORM,
+  });
 
-  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
-    null
+  const { trigger, isMutating } = useSWRMutation(API_ROUTES.truck, addTruck);
+
+  const updatePosition = useCallback(
+    (latLng: LatLngLiteral, shouldValidate = true) => {
+      setPosition(latLng);
+      setValue("latitude", latLng.lat, { shouldValidate });
+      setValue("longitude", latLng.lng, { shouldValidate });
+    },
+    [setValue]
   );
 
-  const userLocation = useUserLocation();
+  useEffect(() => {
+    if (userLocation) {
+      updatePosition(
+        { lat: userLocation.latitude, lng: userLocation.longitude },
+        false
+      );
+    }
+  }, [userLocation, updatePosition]);
 
-  const { trigger, isMutating } = useSWRMutation("/api/caminhao", addTruck);
-
-  const onSubmit = async (data: any) => {
-    const formattedData: NewTruck = {
-      image: imagePreview || "",
+  const onSubmit = async (data: TruckFormValues) => {
+    const newTruck: NewTruck = {
+      image: image ?? "",
       identifier: data.identifier,
       license_plate: data.license_plate,
       tracker_serial_number: data.tracker_serial_number,
-      coordinates: {
-        latitude: data.latitude,
-        longitude: data.longitude,
-      },
+      coordinates: { latitude: data.latitude, longitude: data.longitude },
       start_date: new Date().toISOString(),
     };
 
     try {
       setLoading(true);
-      await trigger(formattedData);
+      await trigger(newTruck);
       showSnackbar("Caminhão cadastrado com sucesso!", "success");
+      // Keeps the selected location: trucks are often registered in batches
+      // at the same yard.
       reset({
-        identifier: "",
-        license_plate: "",
-        tracker_serial_number: "",
-        latitude: 0,
-        longitude: 0,
+        ...EMPTY_FORM,
+        latitude: data.latitude,
+        longitude: data.longitude,
       });
-      setImagePreview(DEFAULT_TRUCK_IMAGE);
+      setImage(null);
     } catch {
       showSnackbar("Erro ao cadastrar caminhão.", "error");
     } finally {
@@ -76,24 +99,26 @@ const AddTruck = () => {
   const handleImageChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const file = event.target.files?.[0] || null;
-    if (file) {
-      try {
-        const base64 = await convertFileToBase64(file);
-        setImagePreview(base64);
-      } catch (error) {
-        showSnackbar("Erro ao processar a imagem.", "error");
-      }
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      showSnackbar(
+        `A imagem deve ter no máximo ${MAX_IMAGE_SIZE_MB}MB.`,
+        "error"
+      );
+      return;
+    }
+
+    try {
+      setImage(await convertFileToBase64(file));
+    } catch {
+      showSnackbar("Erro ao processar a imagem.", "error");
     }
   };
 
-  useEffect(() => {
-    if (userLocation) {
-      setPosition({ lat: userLocation.latitude, lng: userLocation.longitude });
-      setValue("latitude", userLocation.latitude);
-      setValue("longitude", userLocation.longitude);
-    }
-  }, [userLocation, setValue]);
+  const locationError = errors.latitude?.message ?? errors.longitude?.message;
 
   return (
     <Container maxWidth={false}>
@@ -102,108 +127,99 @@ const AddTruck = () => {
           title="Cadastrar Caminhão"
           subtitle="Cadastre um novo caminhão e sua localização."
         />
-        <Paper
-          elevation={0}
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4.5,
-            padding: 2,
-            borderRadius: 2,
-          }}
-        >
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Box display="flex" gap={4} alignItems="center">
+        <Paper elevation={0} sx={PAPER_STYLES}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <Box
+              display="flex"
+              flexDirection={{ xs: "column", md: "row" }}
+              gap={4}
+              alignItems={{ xs: "stretch", md: "center" }}
+            >
               <Box
                 display="flex"
                 flexDirection="column"
                 alignItems="center"
-                gap={2}
+                gap={1.5}
               >
-                <Button variant="contained" component="label">
-                  {imagePreview
-                    ? "Trocar Imagem"
-                    : "Selecionar imagem do caminhão"}
+                <img
+                  src={image ?? truckPlaceholder}
+                  alt="Pré-visualização da imagem do caminhão"
+                  width={220}
+                  height={150}
+                  style={{
+                    borderRadius: 8,
+                    objectFit: "cover",
+                    border: "1px solid #ccc",
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  component="label"
+                  startIcon={<PhotoCameraOutlined />}
+                >
+                  {image ? "Trocar imagem" : "Selecionar imagem"}
                   <input
                     type="file"
-                    accept=".jpg,.jpeg,.png"
+                    accept={ACCEPTED_IMAGE_TYPES}
                     hidden
                     onChange={handleImageChange}
                   />
                 </Button>
-
-                {imagePreview && (
-                  <Box
-                    mt={1}
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                  >
-                    <Typography variant="caption">Pré-visualização:</Typography>
-                    <img
-                      src={imagePreview}
-                      alt="Pré-visualização"
-                      width={220}
-                      height={150}
-                      style={{
-                        borderRadius: 8,
-                        objectFit: "cover",
-                        border: "1px solid #ccc",
-                      }}
-                    />
-                  </Box>
-                )}
+                <Typography variant="caption" color="text.secondary">
+                  JPG, PNG ou WEBP · até {MAX_IMAGE_SIZE_MB}MB
+                </Typography>
               </Box>
 
               <Box display="flex" flexDirection="column" gap={2} flex={1}>
                 <TruckFormField
                   name="identifier"
-                  label="Identificador *"
+                  label="Identificador"
                   control={control}
-                  errors={errors}
                   maxLength={40}
+                  required
                 />
                 <TruckFormField
                   name="license_plate"
-                  label="Placa *"
+                  label="Placa"
                   control={control}
-                  errors={errors}
                   isLicensePlate
+                  required
                 />
                 <TruckFormField
                   name="tracker_serial_number"
-                  label="Número de Série do Rastreador *"
+                  label="Número de Série do Rastreador"
                   control={control}
-                  errors={errors}
                   maxLength={20}
+                  required
                 />
               </Box>
             </Box>
 
-            <Typography variant="subtitle1" mt={4}>
-              Selecione a localização no mapa *:
+            <Typography variant="subtitle1" mt={4} mb={1}>
+              Selecione a localização no mapa *
             </Typography>
-            <TruckSelectionMap
-              position={position}
-              setPosition={setPosition}
-              setValue={setValue}
-            />
+            <TruckSelectionMap position={position} onSelect={updatePosition} />
             <Typography
               variant="caption"
-              color={errors.latitude ? "error" : "inherit"}
+              color={locationError ? "error" : "text.secondary"}
+              role={locationError ? "alert" : undefined}
             >
-              {errors.latitude?.message
-                ? String(errors.latitude.message)
-                : `Latitude: ${
-                    position?.lat ?? "Não selecionado"
-                  } | Longitude: ${position?.lng ?? "Não selecionado"}`}
+              {locationError ??
+                (position
+                  ? `Latitude: ${position.lat.toFixed(5)} | Longitude: ${position.lng.toFixed(5)}`
+                  : "Nenhuma localização selecionada")}
             </Typography>
-            <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-              <LocationButton setPosition={setPosition} setValue={setValue} />
+            <Box
+              display="flex"
+              flexDirection={{ xs: "column", sm: "row" }}
+              justifyContent="flex-end"
+              gap={2}
+              mt={2}
+            >
+              <LocationButton onLocate={updatePosition} />
               <Button
                 type="submit"
                 variant="contained"
-                color="primary"
                 disabled={isMutating}
                 size="large"
               >

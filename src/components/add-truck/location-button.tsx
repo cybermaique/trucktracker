@@ -1,28 +1,34 @@
+import MyLocationOutlined from "@mui/icons-material/MyLocationOutlined";
 import { Button } from "@mui/material";
+import { LatLngLiteral } from "leaflet";
 import { useSnackbarStore } from "../../stores/snackbar";
 
 interface LocationButtonProps {
-  setPosition: (position: { lat: number; lng: number }) => void;
-  setValue: (field: string, value: number) => void;
+  onLocate: (position: LatLngLiteral) => void;
 }
 
-const LocationButton = ({ setPosition, setValue }: LocationButtonProps) => {
+const LocationButton = ({ onLocate }: LocationButtonProps) => {
   const showSnackbar = useSnackbarStore((state) => state.showSnackbar);
 
   const getUserLocation = () => {
+    if (!("geolocation" in navigator)) {
+      showSnackbar("Seu navegador não suporta geolocalização.", "error");
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const userPosition = { lat: coords.latitude, lng: coords.longitude };
-        setPosition(userPosition);
-        setValue("latitude", coords.latitude);
-        setValue("longitude", coords.longitude);
-      },
+      ({ coords }) => onLocate({ lat: coords.latitude, lng: coords.longitude }),
       () => showSnackbar("Erro ao obter localização do usuário", "error")
     );
   };
 
   return (
-    <Button variant="outlined" onClick={getUserLocation} size="large">
+    <Button
+      variant="outlined"
+      onClick={getUserLocation}
+      size="large"
+      startIcon={<MyLocationOutlined />}
+    >
       Usar minha localização
     </Button>
   );
