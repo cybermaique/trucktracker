@@ -1,10 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 const PAGES = [
   { name: "overview", path: "/", ready: "Caminhões na frota" },
   { name: "trucks", path: "/caminhoes", ready: "Mostrando" },
   { name: "new truck", path: "/caminhoes/novo", ready: "Dados do caminhão" },
+  { name: "truck details", path: "/caminhoes/2", ready: "Ficha do veículo" },
   { name: "not found", path: "/nao-existe", ready: "Página não encontrada" },
 ];
 

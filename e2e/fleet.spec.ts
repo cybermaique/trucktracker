@@ -1,10 +1,27 @@
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 const fleetTable = (page: Page) => page.getByRole("table");
 const rowFor = (page: Page, name: string) =>
   fleetTable(page).getByRole("row").filter({ hasText: name });
 
 test.describe("Fleet management", () => {
+  test("serves every API request from the mock Service Worker", async ({
+    page,
+  }) => {
+    const leaked: string[] = [];
+    page.on("response", (response) => {
+      if (response.url().includes("/api/") && !response.fromServiceWorker()) {
+        leaked.push(`${response.status()} ${response.url()}`);
+      }
+    });
+
+    await page.goto("/caminhoes");
+    await expect(fleetTable(page)).toBeVisible();
+
+    expect(leaked).toEqual([]);
+  });
+
   test("overview summarizes the fleet on a rendered map", async ({ page }) => {
     await page.goto("/");
 
@@ -49,11 +66,14 @@ test.describe("Fleet management", () => {
     await expect(
       page.getByText("Volvo FH 540 · Santos (SP) foi cadastrado.")
     ).toBeVisible();
-    await expect(page).toHaveURL(/\/caminhoes\?caminhao=/);
-    await expect(rowFor(page, "Santos (SP)")).toHaveAttribute(
-      "aria-selected",
-      "true"
-    );
+    // Lands on the new truck's page.
+    await expect(page).toHaveURL(/\/caminhoes\/[\w-]+$/);
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Volvo FH 540 · Santos (SP)",
+      })
+    ).toBeVisible();
   });
 
   test("deletes a truck and keeps the change after reloading", async ({
@@ -97,5 +117,37 @@ test.describe("Fleet management", () => {
     await page.getByRole("button", { name: "Alterar tema" }).click();
     await page.getByRole("menuitemradio", { name: "Escuro" }).click();
     await expect(page.locator("html")).toHaveClass(/dark/);
+  });
+
+  test("shows the road route and opens the truck page from the map", async ({
+    page,
+  }) => {
+    await page.goto("/caminhoes");
+    await rowFor(page, "Campinas (SP)").click();
+
+    const popup = page.locator(".maplibregl-popup");
+    await expect(popup).toContainText("em linha reta");
+    await expect(popup).toContainText("105 km · 1 h 30 min por estrada");
+
+    await popup.getByRole("link", { name: "Ver detalhes" }).click();
+    await expect(page).toHaveURL(/\/caminhoes\/2$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Campinas/ })
+    ).toBeVisible();
+    await expect(page.getByText("105 km · 1 h 30 min de viagem")).toBeVisible();
+  });
+
+  test("finds a truck by plate with the command palette", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByText("Caminhões na frota")).toBeVisible();
+
+    await page.keyboard.press("ControlOrMeta+K");
+    await page.getByPlaceholder(/Buscar por nome, placa/).fill("rjo7712");
+    await page.keyboard.press("Enter");
+
+    await expect(page).toHaveURL(/\/caminhoes\/3$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Rio de Janeiro/ })
+    ).toBeVisible();
   });
 });

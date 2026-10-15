@@ -3,6 +3,8 @@ import {
   formatCoordinate,
   formatDate,
   formatDistance,
+  formatDuration,
+  formatSince,
   todayIsoDate,
 } from "./format";
 
@@ -21,6 +23,22 @@ describe("format", () => {
 
   it("formats coordinates with five decimals", () => {
     expect(formatCoordinate(-23.5)).toBe("-23,50000");
+  });
+
+  it.each([
+    [0.2, "1 min"],
+    [45, "45 min"],
+    [120, "2 h"],
+    [107.4, "1 h 47 min"],
+  ])("formats %s minutes as %s", (minutes, expected) => {
+    expect(formatDuration(minutes)).toBe(expected);
+  });
+
+  it("describes how long ago a date was", () => {
+    const now = new Date("2026-10-15T12:00:00Z");
+    expect(formatSince("2024-02-17", now)).toBe("há 2 anos");
+    expect(formatSince("2026-05-01", now)).toBe("há 5 meses");
+    expect(formatSince("2026-10-14", now)).toBe("ontem");
   });
 
   it("returns today as YYYY-MM-DD", () => {

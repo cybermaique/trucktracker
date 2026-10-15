@@ -1,6 +1,5 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { useSearchParams } from "react-router";
-import { ROUTES } from "@/lib/site";
 import type { TruckFilters } from "../lib/filter-trucks";
 
 export const RADIUS_OPTIONS_KM = [100, 500, 1000, 2000] as const;
@@ -98,9 +97,3 @@ export function useTruckFilters() {
     clearFilters: () => change({ search: "", radiusKm: null }),
   };
 }
-
-/** Builds the list URL with a truck pre-selected (e.g. after creating it). */
-export const truckListUrl = (selectedTruckId?: string) =>
-  selectedTruckId
-    ? `${ROUTES.trucks}?${toSearchParams({ search: "", radiusKm: null, selectedTruckId })}`
-    : ROUTES.trucks;

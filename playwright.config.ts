@@ -15,6 +15,8 @@ export default defineConfig({
   retries: isCI ? 2 : 0,
   workers: isCI ? 2 : undefined,
   reporter: isCI ? [["github"], ["html", { open: "never" }]] : "list",
+  // WebGL map initialization is the slowest step on loaded machines.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: `http://localhost:${PORT}`,
     locale: "pt-BR",

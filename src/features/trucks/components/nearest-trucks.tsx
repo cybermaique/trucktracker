@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router";
 import { formatDistance } from "@/lib/format";
-import { truckListUrl } from "../hooks/use-truck-filters";
+import { truckDetailsPath } from "@/lib/site";
 import type { TruckWithDistance } from "../types";
 import { TruckAvatar } from "./truck-avatar";
 
@@ -11,7 +11,7 @@ export function NearestTrucks({ trucks }: { trucks: TruckWithDistance[] }) {
       {trucks.map((truck) => (
         <li key={truck.id}>
           <Link
-            to={truckListUrl(truck.id)}
+            to={truckDetailsPath(truck.id)}
             className="group flex items-center gap-3 rounded-lg p-2 outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <TruckAvatar truck={truck} />

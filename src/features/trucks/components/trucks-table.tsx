@@ -17,12 +17,14 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
   MapPinned,
   MoreHorizontal,
   Pencil,
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +50,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDate, formatDistance } from "@/lib/format";
+import { truckDetailsPath } from "@/lib/site";
 import type { TruckWithDistance } from "../types";
 import { TruckAvatar } from "./truck-avatar";
 
@@ -100,7 +103,7 @@ const createColumns = ({ onSelect, onEdit, onDelete }: TruckActions) =>
       ),
     }),
     helper.accessor("distanceKm", {
-      header: "Distância",
+      header: "Distância (linha reta)",
       cell: ({ getValue }) => (
         <span className="tabular-nums">{formatDistance(getValue())}</span>
       ),
@@ -134,6 +137,12 @@ const createColumns = ({ onSelect, onEdit, onDelete }: TruckActions) =>
             <DropdownMenuItem onSelect={() => onSelect(row.original)}>
               <MapPinned />
               Ver no mapa
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to={truckDetailsPath(row.original.id)}>
+                <FileText />
+                Ver detalhes
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onEdit(row.original)}>
               <Pencil />

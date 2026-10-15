@@ -56,6 +56,8 @@ export default defineConfig([
   {
     files: ["*.config.{js,ts}", "e2e/**"],
     languageOptions: { globals: globals.node },
+    // Playwright fixtures call `use()`, which is not the React hook.
+    rules: { "react-hooks/rules-of-hooks": "off" },
   },
   prettier,
 ]);
