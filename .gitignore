@@ -30,3 +30,8 @@ sonar-project.properties
 
 # Tests
 coverage
+
+# Playwright
+playwright-report
+test-results
+blob-report

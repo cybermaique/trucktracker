@@ -1,144 +1,180 @@
-# TruckTracker - Desafio Inlog 🚀
+<div align="center">
 
-## Descrição do Projeto 📜
+# 🚚 TruckTracker
 
-Este projeto foi desenvolvido como parte do desafio técnico para a vaga de Frontend Developer na Inlog. O objetivo foi criar uma aplicação React com duas páginas principais:
+**Fleet management web app: register trucks and follow them on an interactive vector map, sorted by distance from you.**
 
-1. **Listagem de Caminhões**: Exibe uma lista de veículos ordenados pela proximidade do usuário, com um mapa interativo (usando Leaflet) que mostra a localização de cada veículo.
-2. **Adição de Caminhões**: Permite ao usuário cadastrar novos veículos, incluindo informações básicas e a localização (coordenadas).
-   O projeto foi desenvolvido com React, TypeScript, e utiliza bibliotecas como Leaflet para mapas, Axios para requisições à API, e React Testing Library para testes automatizados.
+[![CI](https://github.com/cybermaique/trucktracker/actions/workflows/ci.yml/badge.svg)](https://github.com/cybermaique/trucktracker/actions/workflows/ci.yml)
+[![Deploy](https://github.com/cybermaique/trucktracker/actions/workflows/deploy.yml/badge.svg)](https://github.com/cybermaique/trucktracker/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
+![Vite 8](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 
----
+[**▶ Live demo**](https://cybermaique.github.io/trucktracker/) · [Features](#-features) · [Tech decisions](#-tech-stack-and-decisions) · [Architecture](#-architecture) · [Quality](#-quality) · [Leia em português 🇧🇷](./README.pt-BR.md)
 
-## Pré-visualização 🎥
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/overview-dark.png" />
+  <img alt="Fleet overview with KPIs, clustered map and nearest trucks" src="docs/screenshots/overview.png" />
+</picture>
 
-### Home
+</div>
 
-![alt text](home-image.png)
+## 📌 About
 
-### Listagem de Caminhões
+TruckTracker began as the take-home challenge for a **Frontend Developer position at [Inlog](https://github.com/weareinlog/Desafio-Inlog---Vaga-Frontend-Developer)**, which I passed. The brief asked for a truck list sorted by proximity to the user with every truck pinned on a map, a registration form, and tests for the list, the form and a fake API.
 
-![alt text](trucks-list.png)
+A year later I rebuilt it as **v2**, a portfolio case that answers one question: _how would I build this today, with no constraints?_ Every library was re-evaluated against the current ecosystem (October 2026), the UI was redesigned from scratch, and the project got the delivery pipeline I would expect from a production codebase.
 
-### Cadastro de Veículos
+> **No backend required.** A [Mock Service Worker](https://mswjs.io/) intercepts `/api/*` at the network level, so the deployed demo is fully interactive. Data lives in your browser's `localStorage`; use _Restaurar dados da demo_ in the sidebar to reset it.
 
-![alt text](register-trucks.png)
+## ✨ Features
 
-### GIF Sidebar, Toolbar e Home
+|                            |                                                                                                                                                                                                                                                                                              |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🗺️ **Vector map**          | MapLibre GL with OpenFreeMap tiles: smooth zoom, **marker clustering**, light/dark map styles, a "frame the fleet" control and a popup for the selected truck.                                                                                                                               |
+| 📍 **Distance-aware**      | Every truck is sorted by distance from you (Haversine). The map draws your position, the **search radius** as a circle and a **line to the selected truck**. If location access is denied, it falls back to São Paulo and says so.                                                           |
+| 🔎 **Shareable filters**   | Search by name, plate or tracker (ignoring case, accents and punctuation), plus a distance radius. Filters and the selected truck live in the **URL**, so any view can be bookmarked or shared.                                                                                              |
+| 📊 **Overview dashboard**  | KPIs, the five nearest trucks and a distance distribution chart built with plain HTML/CSS.                                                                                                                                                                                                   |
+| ➕ **Create & edit**       | One form for both flows (React Hook Form + Zod): live plate formatting (old `ABC-1234` and Mercosul `ABC1D23` formats), a map picker with a draggable marker, and photo upload **resized in the browser** before saving. API conflicts (duplicated plate, `409`) show up on the right field. |
+| ⚡ **Optimistic UI**       | Deleting and editing update the screen instantly and **roll back** if the request fails.                                                                                                                                                                                                     |
+| 📄 **Export**              | PDF report (jsPDF, loaded on demand) and an Excel-friendly CSV of the current filtered list.                                                                                                                                                                                                 |
+| 🌗 **Themes & responsive** | Light, dark or system theme with no flash on load; collapsible sidebar that becomes a drawer on mobile.                                                                                                                                                                                      |
+| ♿ **Accessible**          | Keyboard-operable table, labelled controls, landmarks, a skip link, and **automated WCAG 2.1 AA audits** in both themes.                                                                                                                                                                     |
 
-![alt text](home.gif)
+<details>
+<summary><strong>📸 Screenshots</strong></summary>
 
-### GIF Listagem
+| Fleet list: search radius + selected truck                                              | Dark theme                                                     |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| ![Trucks list with radius and route to the selected truck](docs/screenshots/trucks.png) | ![Trucks list in dark theme](docs/screenshots/trucks-dark.png) |
 
-![alt text](list-trucks.gif)
+| New truck                                                         | Validation                                                 |
+| ----------------------------------------------------------------- | ---------------------------------------------------------- |
+| ![New truck form with map picker](docs/screenshots/new-truck.png) | ![Form validation errors](docs/screenshots/validation.png) |
 
-### GIF Cadastro
+| Edit in a side sheet                                | Mobile                                                 | Mobile navigation                                  |
+| --------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------- |
+| ![Edit truck sheet](docs/screenshots/edit-dark.png) | ![Mobile overview](docs/screenshots/mobile-trucks.png) | ![Mobile drawer](docs/screenshots/mobile-menu.png) |
 
-![alt text](register.gif)
+</details>
 
-### GIF Exportar Relatório
+## 🛠 Tech stack and decisions
 
-![alt text](report.gif)
+| Concern      | Choice                                                          | Why (and what I compared it with)                                                                                                                                                                                                         |
+| ------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI runtime   | **React 19** + **React Compiler**                               | Automatic memoization: no hand-written `useMemo`/`useCallback`. Its ESLint rules catch impure renders and state set inside effects.                                                                                                       |
+| Language     | **TypeScript 6** (strict, `noUncheckedIndexedAccess`)           | TypeScript 7 (the native Go compiler) is out, but `typescript-eslint` only supports `<6.1`. Type-aware linting matters more than compile speed here.                                                                                      |
+| Build        | **Vite 8** (Rolldown)                                           | Route-level code splitting, long-cached vendor chunks, and heavy libraries (jsPDF, ~400 kB) loaded only when needed.                                                                                                                      |
+| Maps         | **MapLibre GL** + `@vis.gl/react-maplibre` + **OpenFreeMap**    | WebGL vector tiles, native clustering and data-driven styling. **Leaflet** is raster-based and `react-leaflet` has had no release since 2024. **Google Maps/Mapbox** need an API key and billing, which a public repository would expose. |
+| Server state | **TanStack Query**                                              | Query-key factories, optimistic mutations with rollback, and prefetching from route loaders. It replaced SWR and a Redux slice that only duplicated the cache.                                                                            |
+| Routing      | **React Router 8** (data mode)                                  | Lazy routes, loaders that start fetching in parallel with the chunk download, breadcrumbs from route `handle`s.                                                                                                                           |
+| UI kit       | **Tailwind CSS 4** + **shadcn/ui** (Radix)                      | Accessible primitives with code we own and theme through CSS variables. It replaced MUI 6, whose runtime CSS-in-JS and default look did not fit a custom design.                                                                          |
+| Forms        | **React Hook Form** + **Zod 4**                                 | A single schema validates the form, and a `transform` narrows its output to the domain type.                                                                                                                                              |
+| API contract | **Zod at the boundary**                                         | Responses are parsed and mapped from the challenge's snake_case DTO to a camelCase domain model.                                                                                                                                          |
+| Mock API     | **MSW 3**                                                       | The same handlers serve the browser demo (Service Worker), unit tests (Node) and E2E tests. It replaced **MirageJS**, which is unmaintained.                                                                                              |
+| Testing      | **Vitest 5**, **Testing Library**, **Playwright**, **axe-core** | Behavior-driven unit/integration tests plus real-browser E2E and accessibility audits.                                                                                                                                                    |
+| Tooling      | ESLint 10, Prettier, knip, husky + lint-staged, Dependabot      | Static analysis, dead-code detection and dependency hygiene, all enforced in CI.                                                                                                                                                          |
 
----
+## 🏗 Architecture
 
-## Coverage 🧪
+Code is organized **by feature**: everything about trucks (API, hooks, components, domain logic, schemas) lives together. Pages only compose features.
 
-![alt text](tests-coverage.png)
+```mermaid
+flowchart LR
+  subgraph Browser
+    Router["React Router<br/>lazy routes + loaders"] --> Pages
+    Pages --> Features["features/trucks<br/>components · hooks · lib"]
+    Features --> Query["TanStack Query<br/>cache + optimistic mutations"]
+    Router -. prefetch .-> Query
+    Query --> Client["HTTP client<br/>+ Zod validation"]
+  end
+  Client -- "fetch /api/*" --> SW["MSW Service Worker"]
+  SW --> DB[("In-memory DB<br/>persisted to localStorage")]
+```
 
----
+```text
+src/
+├── app/            # Composition root: providers, routes (lazy + loaders), query client
+├── components/     # App shell (sidebar, header), theme, shared states; ui/ = shadcn primitives
+├── features/
+│   ├── location/   # Geolocation as a cached query, with fallback and status badge
+│   └── trucks/
+│       ├── api/        # HTTP calls, query keys/options, mutations
+│       ├── components/ # Map, location picker, table, form, sheets, dialogs, charts
+│       ├── hooks/      # Fleet data with distances, URL-backed filters
+│       ├── lib/        # Pure domain logic: distance, filters, geo shapes, stats, export
+│       └── schemas.ts  # Zod: API DTO + form schema, DTO ↔ domain mapping
+├── lib/            # HTTP client, formatters, site constants, utilities
+├── mocks/          # MSW handlers, seed data and repository (same in demo and tests)
+├── pages/          # Route components
+└── test/           # Test setup, render helpers, factories, map test double
+```
 
-## Funcionalidades ✨
+**Patterns worth a look**
 
-- **Listagem de Veículos**:
-  - Lista de veículos ordenada pela proximidade do usuário.
-  - Mapa interativo com pins indicando a localização de cada veículo.
-  - Ao clicar em uma linha da lista, o mapa é movido diretamente para a localização daquele caminhão.
-  - Ao clicar no pin de um caminhão no mapa, é exibido um popup com as informações mais importantes do caminhão.
-  - Integração com a API para buscar os dados dos veículos.
-  - **Filtro de Veículos**: Possibilidade de filtrar os veículos por placa, número de rastreador ou distância.
-- **Cadastro de Veículos**:
-  - Formulário para cadastrar novos veículos.
-  - Campos para identificação, placa, número de série do rastreador e coordenadas (latitude e longitude).
-  - Validação de campos e feedback visual.
-  - **Upload de Imagem**: Funcionalidade de upload de imagem para cada caminhão cadastrado, com a exibição da foto na listagem.
-  - **Localização do Usuário**: Captura automática da localização do usuário no cadastro de veículos, facilitando o preenchimento do campo de localização.
-- **Testes Automatizados**:
-  - Testes para garantir que a listagem de veículos e o formulário de cadastro funcionem corretamente.
-  - Testes de integração com a API.
-- **Relatórios**:
-  - **Botão para Baixar Relatório**: Permite ao usuário baixar a listagem de veículos em formato PDF.
+- **URL as state**: [`use-truck-filters.ts`](src/features/trucks/hooks/use-truck-filters.ts). Local state is the source of truth, so the UI reacts in the same frame. The URL mirrors it (search debounced), and each write serializes the whole state so quick successive changes never overwrite each other.
+- **Render-as-you-fetch**: [`routes.tsx`](src/app/routes.tsx) loaders prefetch data while the page chunk downloads.
+- **Optimistic mutations with rollback**: [`mutations.ts`](src/features/trucks/api/mutations.ts).
+- **Geolocation as a query**: [`use-user-location.ts`](src/features/location/use-user-location.ts) never rejects; it resolves to the device position or a labelled fallback, and the result is cached across pages.
+- **Library interop with the compiler**: [`trucks-table.tsx`](src/features/trucks/components/trucks-table.tsx) opts out with `"use no memo"` because TanStack Table mutates a stable instance internally. The comment explains why.
 
----
+## ✅ Quality
 
-## Bônus Implementados 🎁
+| Check                                                             | What it guarantees                                                                                                                                                      |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **113 unit & integration tests** (Vitest + Testing Library + MSW) | Pages render the real routes against the real handlers: sorting, URL filters, optimistic delete with rollback, edit conflicts, validation, exports, error/empty states. |
+| **42 E2E tests** (Playwright, desktop + mobile)                   | Production build in a real browser: Service Worker API, WebGL map, create/delete flows, persistence after reload.                                                       |
+| **Accessibility audits** (axe-core)                               | No WCAG 2.1 A/AA violations on every page, in light **and** dark themes, plus no horizontal overflow on any viewport.                                                   |
+| **Coverage thresholds**                                           | 90% statements/lines, 85% branches, measured on React Compiler output (currently ~92% statements, 85% branches, 98% lines).                                             |
+| **Static analysis**                                               | Strict TypeScript, ESLint with React Compiler and TanStack Query rules, knip for unused code.                                                                           |
+| **CI/CD**                                                         | Every push and PR runs all of the above. `main` deploys to GitHub Pages. Dependabot groups monthly updates.                                                             |
 
-- **Filtro de Veículos**: Adicionei um campo de busca que permite filtrar os veículos por placa, número de rastreador ou distância, facilitando a navegação pela lista.
-- **Upload e Listagem de Imagem**: No formulário de cadastro, implementei a funcionalidade de upload de imagem para permitir o envio de uma foto do caminhão. A imagem também aparece na coluna imagem na listagem dos caminhões.
-- **Localização do Usuário**: Na página de cadastro de caminhões, adicionei uma funcionalidade que captura automaticamente a localização atual do usuário e a exibe no mapa, facilitando o preenchimento do campo de localização e melhorando a experiência do usuário.
-- **Edição e Exclusão de Caminhões**: Implementei a possibilidade de editar e excluir caminhões, com a criação de serviços e endpoints no MirageJS para simulação de API. Também foram implementados modais de edição e exclusão, juntamente com testes unitários para garantir o correto funcionamento dessas funcionalidades.
-- **Interface Melhorada**: Implementei uma **toolbar** para facilitar a navegação, um **footer** com informações adicionais e uma **sidebar retrátil** para melhorar a organização e acessibilidade do layout.
-- **Estrutura do Keycloak**: Preparei a estrutura do Keycloak para uma futura integração de autenticação e autorização no projeto, garantindo que a aplicação esteja pronta para ser escalada com segurança.
-- **Migração de CRA para Vite**: Realizei a migração do projeto de **Create React App (CRA)** para **Vite**. A migração traz melhorias significativas, como tempos de build mais rápidos, inicialização mais ágil e uma configuração mais flexível, melhorando o desempenho geral da aplicação.
-- **Instalação e Configuração do SonarQube**: Instalei e configurei o SonarQube no projeto para garantir a qualidade do código. Durante o desenvolvimento, fiz análises diárias no SonarQube para identificar e corrigir problemas de qualidade e garantir os melhores resultados possíveis no código.
-- **Botão para Baixar Relatório**: Adicionei um botão na tela de listagem que permite ao usuário baixar um relatório contendo a listagem dos caminhões em formato PDF.
+## 🚀 Getting started
 
----
+**Requirements:** Node.js 24 LTS (`nvm use` reads `.nvmrc`) and [pnpm](https://pnpm.io/) 10.
 
-## Observações ⚠️
+```bash
+git clone https://github.com/cybermaique/trucktracker.git
+cd trucktracker
+pnpm install
+pnpm dev
+```
 
-- **Uso do Redux**: Embora o Redux tenha sido utilizado no projeto para gerenciar o estado global dos caminhões após as requisições à API, esse gerenciamento não é essencial para a aplicação. O Redux foi implementado como parte do desafio técnico, mas sua utilização pode ser vista mais como um teste e um extra, pois não achei necessário a utilização completo do mesmo devido ao tamanho atual do projeto.
-- **Gerenciamento do Estado Global**: Para gerenciar o estado global do snackbar e do loading, foi utilizado o **Zustand**, que proporciona uma abordagem mais leve e eficiente para esses casos de uso, sendo uma solução mais adequada e simples para o gerenciamento de estados localizados na aplicação.
-- **Responsividade**: Não foquei no design responsivo para esse projeto, pois o tempo para o desafio foi um fator limitante. Meu principal foco foi garantir que as funcionalidades principais, como a listagem de caminhões, o cadastro de veículos e os testes unitários, estivessem bem implementadas. Caso o prazo fosse maior, eu teria dedicado mais tempo para aprimorar a responsividade e garantir que a aplicação fosse totalmente adaptável a diferentes dispositivos.
-- **Padrão Smart Container**: Nos últimos commits, apliquei o padrão smart container na listagem de caminhões. Este padrão foi adotado porque, com o crescimento da aplicação, é importante separar a lógica de negócio e o gerenciamento de estado dos componentes de apresentação. Isso facilita a manutenção do código, criação de testes e melhora a escalabilidade e torna a aplicação mais modular. Com o tempo, esse padrão vai ajudar a reduzir a complexidade e facilitar a inclusão de novas funcionalidades sem grandes alterações na estrutura do projeto.
+Open `http://localhost:5173` and allow location access to see real distances.
 
-Com isso, em um projeto real, eu teria iniciado aplicando tanto a responsividade quanto o padrão smart container desde o começo.
+| Command                                                      | Description                                                                                                                 |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                                   | Dev server with HMR and React Query Devtools                                                                                |
+| `pnpm build` / `pnpm preview`                                | Type-check and build / serve the production build                                                                           |
+| `pnpm test` / `pnpm test:watch`                              | Unit and integration tests                                                                                                  |
+| `pnpm test:coverage`                                         | Tests with coverage report (`coverage/index.html`)                                                                          |
+| `pnpm test:e2e`                                              | Playwright suite (run `pnpm exec playwright install chromium` once, or set `PW_CHANNEL=chrome` to use an installed browser) |
+| `pnpm lint` / `pnpm format` / `pnpm typecheck` / `pnpm knip` | Static analysis                                                                                                             |
+| `pnpm validate`                                              | Everything the CI quality job runs                                                                                          |
 
----
+## 🧭 Project history
 
-## Tecnologias Utilizadas 🛠️
+- **v1 (Feb 2025)** – Challenge delivery: React 19, MUI, Leaflet, SWR, MirageJS, Redux, Vitest. Approved.
+- **v1.1** – Review pass: fixed broken build and lint, restored the lost PDF export, removed 53 vulnerable dependencies, and added CI and a live demo.
+- **v2 (Oct 2026)** – Full rebuild described above. See the [pull request](https://github.com/cybermaique/trucktracker/pulls?q=is%3Apr+v2) for the reasoning behind each change.
 
-- **React**: Biblioteca principal para construção da interface.
-- **TypeScript**: Para tipagem estática e melhor organização do código.
-- **Vite**: Build tool rápida para desenvolvimento e produção.
-- **MUI (Material UI)**: Biblioteca de componentes para estilização moderna.
-- **Emotion**: Biblioteca de CSS-in-JS usada pelo MUI.
-- **Leaflet & React Leaflet**: Biblioteca para exibição de mapas interativos.
-- **Axios**: Para requisições HTTP à API.
-- **SWR**: Gerenciamento de estado assíncrono para requisições e cache de dados.
-- **Redux**: Para gerenciamento global de estado e armazenamento dos dados dos caminhões vindo da API.
-- **React Hook Form**: Gerenciamento de formulários com validação eficiente.
-- **Zod**: Biblioteca de validação de schemas integrada ao React Hook Form.
-- **UUID**: Para geração de identificadores únicos universais.
-- **Zustand**: Gerenciamento de estado leve e eficiente.
-- **MirageJS**: Simulação de API para desenvolvimento sem backend.
-- **Keycloak JS**: Gerenciamento de autenticação e autorização.
-- **JSPDF & JSPDF-Autotable**: Geração de PDFs, incluindo tabelas formatadas.
-- **React Router**: Para gerenciamento de rotas.
-- **Styled Components**: Para estilização dos componentes.
-- **Day.js**: Biblioteca de manipulação de datas que foi escolhida ao invés do Date-fns por ser mais leve e ter uma API similar ao moment.js, oferecendo uma experiência de uso mais simples e rápida, além de ser recomendada pela documentação do MUI.
-- **PNPM**: Gerenciador de pacotes eficiente e rápido, com as seguintes vantagens:
-  - Instalação de dependências mais rápida, utilizando links simbólicos e economizando espaço em disco.
-  - Cache global que melhora a performance e reduz o tempo de download entre projetos.
-  - Verificação rigorosa de integridade dos pacotes, garantindo mais segurança e estabilidade no ambiente de desenvolvimento.
-  - Menor uso de espaço no disco em comparação com o NPM, especialmente em projetos múltiplos com dependências comuns.
+## 🗺 Roadmap
 
----
+- [ ] Real backend (REST or tRPC) with authentication
+- [ ] Live positions over WebSocket/SSE (MSW can already mock both)
+- [ ] Route history and geofencing alerts per truck
+- [ ] Internationalization (pt-BR / en)
 
-### Testes e Qualidade de Código 🧪
+## 🙏 Acknowledgments
 
-- **Vitest**: Framework de testes unitários e integração.
-- **React Testing Library**: Testes focados na usabilidade de componentes.
-- **Jest DOM**: Extensões do Jest para testar o DOM de maneira mais intuitiva.
-- **Testing Library User Event**: Simulação interativa de eventos do usuário.
-- **ESLint**: Linter para manter a padronização do código.
-- **Prettier**: Formatação automática do código.
-- **Sonar Scanner**: Análise de código para identificar bugs e vulnerabilidades.
+Thanks to **Danielle Capello de Oliveira** and **Alexandre Borges** for their contributions during the original challenge.
 
----
+## 👤 Author
 
-## Agradecimentos 🙏
+**Maique Moraes** · [LinkedIn](https://www.linkedin.com/in/maique-moraes) · [GitHub](https://github.com/cybermaique)
 
-Gostaria de expressar minha gratidão a: **Danielle Capello de Oliveira** e **Alexandre Borges**
+## 📄 License
 
-Muito obrigado pela contribuição de ambos!
+[MIT](./LICENSE)

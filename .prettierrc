@@ -2,5 +2,9 @@
   "semi": true,
   "singleQuote": false,
   "tabWidth": 2,
-  "trailingComma": "es5"
+  "trailingComma": "es5",
+  "endOfLine": "lf",
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindStylesheet": "./src/styles/globals.css",
+  "tailwindFunctions": ["cn", "cva"]
 }

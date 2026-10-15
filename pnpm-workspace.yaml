@@ -1,0 +1,6 @@
+# Isolated node_modules (the default) surfaces undeclared dependencies.
+nodeLinker: isolated
+engineStrict: true
+
+ignoredBuiltDependencies:
+  - core-js
