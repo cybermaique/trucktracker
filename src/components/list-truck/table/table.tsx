@@ -17,8 +17,9 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import truckPlaceholder from "../../../assets/images/truck-placeholder.jpg";
 import {
-  DEFAULT_TRUCK_IMAGE,
+  DEFAULT_PAGE_SIZE,
   PAGE_SIZE_OPTIONS,
   TRUCK_TABLE_COLUMNS,
 } from "../../../constants/table";
@@ -32,11 +33,13 @@ interface TruckTableProps {
   trucks: TruckWithDistance[];
   selectedTruck: TruckWithDistance | null;
   setSelectedTruck: (truck: TruckWithDistance | null) => void;
-  setIsDistanceDescending: (prev: boolean) => void;
+  setIsDistanceDescending: (isDescending: boolean) => void;
   isDistanceDescending: boolean;
   handleEditOpen: (truck: TruckWithDistance) => void;
   handleDeleteOpen: (truck: TruckWithDistance) => void;
 }
+
+type ColumnKey = (typeof TRUCK_TABLE_COLUMNS)[number]["key"];
 
 export const TruckTable = ({
   trucks,
@@ -48,160 +51,177 @@ export const TruckTable = ({
   handleDeleteOpen,
 }: TruckTableProps) => {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedTruckForMenu, setSelectedTruckForMenu] =
-    useState<TruckWithDistance | null>(null);
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_PAGE_SIZE);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [menuTruck, setMenuTruck] = useState<TruckWithDistance | null>(null);
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+  useEffect(() => {
+    setPage(0);
+  }, [trucks, rowsPerPage]);
 
   const handleMenuOpen = (
     event: React.MouseEvent<HTMLElement>,
     truck: TruckWithDistance
   ) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedTruckForMenu(truck);
+    event.stopPropagation();
+    setMenuAnchor(event.currentTarget);
+    setMenuTruck(truck);
   };
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedTruckForMenu(null);
+    setMenuAnchor(null);
+    setMenuTruck(null);
   };
 
-  useEffect(() => {
-    setPage(0);
-  }, [trucks]);
+  const handleMenuAction = (action: (truck: TruckWithDistance) => void) => {
+    if (menuTruck) action(menuTruck);
+    handleMenuClose();
+  };
+
+  const handleRowKeyDown = (
+    event: React.KeyboardEvent,
+    truck: TruckWithDistance
+  ) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setSelectedTruck(truck);
+    }
+  };
+
+  const renderCell = (truck: TruckWithDistance, key: ColumnKey) => {
+    switch (key) {
+      case "image":
+        return (
+          <img
+            src={truck.image || truckPlaceholder}
+            alt={`Foto do ${truck.identifier}`}
+            width={70}
+            height={50}
+            loading="lazy"
+            style={{ objectFit: "cover", borderRadius: 4 }}
+          />
+        );
+      case "start_date":
+        return formatDate(truck.start_date);
+      case "actions":
+        return (
+          <IconButton
+            aria-label={`Ações para ${truck.identifier}`}
+            aria-haspopup="menu"
+            onClick={(event) => handleMenuOpen(event, truck)}
+          >
+            <MoreVertIcon />
+          </IconButton>
+        );
+      default:
+        return getTruckCellValue(truck, key);
+    }
+  };
+
+  const visibleTrucks = trucks.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
     <TableContainer
       component={Paper}
-      sx={{ mt: 2, borderTop: `1px solid ${colors.chineseWhite}` }}
+      variant="outlined"
+      sx={{ borderColor: colors.chineseWhite }}
     >
-      <Table data-testid="truck-table">
-        <TableHead>
-          <TableRow>
-            {TRUCK_TABLE_COLUMNS.map((column) => (
-              <TableCell
-                key={column.key}
-                sx={
-                  column.sortable
-                    ? { cursor: "pointer", fontWeight: "bold" }
-                    : {}
-                }
-                onClick={
-                  column.sortable
-                    ? () => setIsDistanceDescending(!isDistanceDescending)
-                    : undefined
-                }
-              >
-                {column.sortable ? (
-                  <TableSortLabel
-                    active
-                    direction={isDistanceDescending ? "desc" : "asc"}
-                  >
-                    <strong>{column.label}</strong>
-                  </TableSortLabel>
-                ) : (
-                  <strong>{column.label}</strong>
-                )}
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {trucks
-            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-            .map((truck) => (
-              <TableRow
-                key={truck.id}
-                onClick={() => setSelectedTruck(truck)}
-                sx={{
-                  cursor: "pointer",
-                  backgroundColor:
-                    selectedTruck?.id === truck.id
-                      ? colors.antiFlashWhite
-                      : "inherit",
-                }}
-              >
-                {TRUCK_TABLE_COLUMNS.map((column) => (
-                  <TableCell key={column.key}>
-                    {column.key === "start_date" ? (
-                      formatDate(truck.start_date)
-                    ) : column.key === "image" ? (
-                      <img
-                        src={truck.image || DEFAULT_TRUCK_IMAGE}
-                        alt="Caminhão"
-                        width={70}
-                        height={50}
-                      />
-                    ) : column.key === "actions" ? (
-                      <>
-                        <IconButton
-                          onClick={(event) => handleMenuOpen(event, truck)}
-                        >
-                          <MoreVertIcon />
-                        </IconButton>
-                      </>
-                    ) : (
-                      getTruckCellValue(truck, column.key)
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-        </TableBody>
-      </Table>
+      <Box sx={{ overflowX: "auto" }}>
+        <Table data-testid="truck-table" aria-label="Lista de caminhões">
+          <TableHead>
+            <TableRow>
+              {TRUCK_TABLE_COLUMNS.map((column) => (
+                <TableCell
+                  key={column.key}
+                  sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}
+                  sortDirection={
+                    column.sortable && (isDistanceDescending ? "desc" : "asc")
+                  }
+                >
+                  {column.sortable ? (
+                    <TableSortLabel
+                      active
+                      direction={isDistanceDescending ? "desc" : "asc"}
+                      onClick={() =>
+                        setIsDistanceDescending(!isDistanceDescending)
+                      }
+                    >
+                      {column.label}
+                    </TableSortLabel>
+                  ) : (
+                    column.label
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {visibleTrucks.map((truck) => {
+              const isSelected = selectedTruck?.id === truck.id;
+
+              return (
+                <TableRow
+                  key={truck.id}
+                  hover
+                  selected={isSelected}
+                  tabIndex={0}
+                  aria-selected={isSelected}
+                  onClick={() => setSelectedTruck(truck)}
+                  onKeyDown={(event) => handleRowKeyDown(event, truck)}
+                  sx={{ cursor: "pointer" }}
+                >
+                  {TRUCK_TABLE_COLUMNS.map((column) => (
+                    <TableCell key={column.key}>
+                      {renderCell(truck, column.key)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Box>
 
       <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
       >
-        <MenuItem
-          onClick={() => {
-            handleEditOpen(selectedTruckForMenu!);
-            handleMenuClose();
-          }}
-        >
+        <MenuItem onClick={() => handleMenuAction(handleEditOpen)}>
           Editar
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            handleDeleteOpen(selectedTruckForMenu!);
-            handleMenuClose();
-          }}
-        >
+        <MenuItem onClick={() => handleMenuAction(handleDeleteOpen)}>
           Excluir
         </MenuItem>
       </Menu>
 
       <Box
         display="flex"
+        flexDirection={{ xs: "column", md: "row" }}
         justifyContent="space-between"
-        width="100%"
+        alignItems="center"
+        gap={1}
         padding={2}
       >
-        {trucks.length > 0 && (
-          <Typography variant="body1">
-            {trucks.length}{" "}
-            {trucks.length === 1
-              ? "Resultado encontrado"
-              : "Resultados encontrados"}
-          </Typography>
-        )}
-        <Box display="flex" alignItems="center">
-          <Typography variant="body1" marginRight={1}>
+        <Typography variant="body1" role="status">
+          {trucks.length}{" "}
+          {trucks.length === 1
+            ? "Resultado encontrado"
+            : "Resultados encontrados"}
+        </Typography>
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography variant="body1" id="rows-per-page-label">
             Exibir
           </Typography>
           <Select
             value={rowsPerPage}
-            onChange={(e) =>
-              setRowsPerPage(parseInt(e.target.value as string, 10))
-            }
-            variant="outlined"
+            onChange={(event) => setRowsPerPage(Number(event.target.value))}
             size="small"
+            inputProps={{ "aria-labelledby": "rows-per-page-label" }}
           >
             {PAGE_SIZE_OPTIONS.map((option) => (
               <MenuItem key={option} value={option}>
@@ -209,16 +229,14 @@ export const TruckTable = ({
               </MenuItem>
             ))}
           </Select>
-          <Typography variant="body1" marginLeft={1}>
-            registros por página
-          </Typography>
+          <Typography variant="body1">registros por página</Typography>
         </Box>
         <TablePagination
           component="div"
           count={trucks.length}
           rowsPerPage={rowsPerPage}
           page={page}
-          onPageChange={handleChangePage}
+          onPageChange={(_event, newPage) => setPage(newPage)}
           ActionsComponent={CustomActionsComponent}
           rowsPerPageOptions={[]}
           labelRowsPerPage=""

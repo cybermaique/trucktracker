@@ -1,24 +1,32 @@
 import dayjs from "dayjs";
 import { useState } from "react";
-import { mutate } from "swr";
+import { useSWRConfig } from "swr";
+import { API_ROUTES } from "../constants/api";
 import { TruckWithDistance } from "../interfaces/truck";
 import { deleteTruck } from "../services/delete-truck";
 import { updateTruck } from "../services/update-truck";
 import { useLoadingStore } from "../stores/loading";
 import { useSnackbarStore } from "../stores/snackbar";
+import { formatLicensePlate } from "../utils/list-truck";
+import { TruckEditValues, truckEditSchema } from "../validation/truck-schema";
+
+export type EditErrors = Partial<Record<keyof TruckEditValues, string>>;
 
 export const useActionsTable = () => {
-  const { setLoading } = useLoadingStore();
-  const { showSnackbar } = useSnackbarStore();
+  const setLoading = useLoadingStore((state) => state.setLoading);
+  const showSnackbar = useSnackbarStore((state) => state.showSnackbar);
+  const { mutate } = useSWRConfig();
 
   const [selectedTruck, setSelectedTruck] = useState<TruckWithDistance | null>(
     null
   );
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [editErrors, setEditErrors] = useState<EditErrors>({});
 
   const handleEditOpen = (truck: TruckWithDistance) => {
     setSelectedTruck(truck);
+    setEditErrors({});
     setOpenEditDialog(true);
   };
 
@@ -31,20 +39,38 @@ export const useActionsTable = () => {
 
   const handleDeleteClose = () => setOpenDeleteDialog(false);
 
+  const validateEdit = (truck: TruckWithDistance) => {
+    const result = truckEditSchema.safeParse(truck);
+    if (result.success) {
+      setEditErrors({});
+      return true;
+    }
+
+    const fieldErrors = result.error.flatten().fieldErrors;
+    setEditErrors(
+      Object.fromEntries(
+        Object.entries(fieldErrors).map(([field, messages]) => [
+          field,
+          messages?.[0],
+        ])
+      )
+    );
+    return false;
+  };
+
   const handleSaveEdit = async () => {
-    if (!selectedTruck) return;
+    if (!selectedTruck || !validateEdit(selectedTruck)) return;
 
     try {
       setLoading(true);
-      await updateTruck(`/api/caminhao/${selectedTruck.id}`, {
+      await updateTruck(API_ROUTES.truckById(selectedTruck.id), {
         arg: selectedTruck,
       });
-
-      await mutate("/api/caminhoes");
+      await mutate(API_ROUTES.trucks);
 
       showSnackbar("Caminhão atualizado com sucesso!", "success");
       handleEditClose();
-    } catch (error) {
+    } catch {
       showSnackbar("Erro ao atualizar caminhão!", "error");
     } finally {
       setLoading(false);
@@ -56,13 +82,13 @@ export const useActionsTable = () => {
 
     try {
       setLoading(true);
-      await deleteTruck(`/api/caminhao/${selectedTruck.id}`);
-
-      await mutate("/api/caminhoes");
+      await deleteTruck(API_ROUTES.truckById(selectedTruck.id));
+      await mutate(API_ROUTES.trucks);
 
       showSnackbar("Caminhão excluído com sucesso!", "success");
+      setSelectedTruck(null);
       handleDeleteClose();
-    } catch (error) {
+    } catch {
       showSnackbar("Erro ao excluir caminhão!", "error");
     } finally {
       setLoading(false);
@@ -76,8 +102,9 @@ export const useActionsTable = () => {
 
     setSelectedTruck({
       ...selectedTruck,
-      [name]: value,
+      [name]: name === "license_plate" ? formatLicensePlate(value) : value,
     });
+    setEditErrors((errors) => ({ ...errors, [name]: undefined }));
   };
 
   const handleChangeDate = (value: dayjs.Dayjs | null) => {
@@ -85,7 +112,7 @@ export const useActionsTable = () => {
 
     setSelectedTruck({
       ...selectedTruck,
-      start_date: value?.toISOString() || "",
+      start_date: value?.toISOString() ?? "",
     });
   };
 
@@ -94,6 +121,7 @@ export const useActionsTable = () => {
     setSelectedTruck,
     openEditDialog,
     openDeleteDialog,
+    editErrors,
     handleEditOpen,
     handleEditClose,
     handleDeleteOpen,

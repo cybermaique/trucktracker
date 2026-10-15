@@ -1,51 +1,50 @@
 import { renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import useUserLocation from ".";
+import { DEFAULT_LOCATION } from "../../constants/map";
+import { useSnackbarStore } from "../../stores/snackbar";
+import {
+  mockGeolocationDenied,
+  mockGeolocationSuccess,
+} from "../../tests/geolocation";
 
 describe("useUserLocation", () => {
-  beforeEach(() => {
-    Object.defineProperty(global.navigator, "geolocation", {
-      value: {
-        getCurrentPosition: vi.fn(),
-      },
-      writable: true,
-    });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    useSnackbarStore.getState().closeSnackbar();
   });
 
-  it("should return the user's location correctly", async () => {
-    const mockPosition = {
-      coords: {
-        latitude: 40.7128,
-        longitude: -74.006,
-      },
-    };
-    (navigator.geolocation.getCurrentPosition as Mock).mockImplementationOnce(
-      (success) => {
-        success(mockPosition);
-      }
-    );
+  it("should return the user's location when permission is granted", async () => {
+    mockGeolocationSuccess({ latitude: 40.7128, longitude: -74.006 });
 
     const { result } = renderHook(() => useUserLocation());
 
-    await waitFor(() => result.current !== null);
-
-    expect(result.current).toEqual({
+    await waitFor(() => expect(result.current.status).toBe("granted"));
+    expect(result.current.location).toEqual({
       latitude: 40.7128,
       longitude: -74.006,
     });
   });
 
-  it("should handle errors when obtaining the location", async () => {
-    (navigator.geolocation.getCurrentPosition as Mock).mockImplementationOnce(
-      (_, error) => {
-        error(new Error("Error getting the location"));
-      }
-    );
+  it("should fall back to the default location and warn the user when denied", async () => {
+    mockGeolocationDenied();
 
     const { result } = renderHook(() => useUserLocation());
 
-    await waitFor(() => result.current === null);
+    await waitFor(() => expect(result.current.status).toBe("fallback"));
+    expect(result.current.location).toEqual(DEFAULT_LOCATION);
+    expect(useSnackbarStore.getState()).toMatchObject({
+      open: true,
+      severity: "warning",
+    });
+  });
 
-    expect(result.current).toBeNull();
+  it("should fall back when the Geolocation API is unavailable", async () => {
+    vi.stubGlobal("navigator", {});
+
+    const { result } = renderHook(() => useUserLocation());
+
+    await waitFor(() => expect(result.current.status).toBe("fallback"));
+    expect(result.current.location).toEqual(DEFAULT_LOCATION);
   });
 });

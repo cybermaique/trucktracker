@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { TRUCKS } from "../__mocks__/trucks-server.mock";
-import { server } from "../tests/setup-tests";
+import { server } from "../tests/mock-server";
 import { useGetTrucks } from "./get-trucks";
 
 describe("useGetTrucks", () => {

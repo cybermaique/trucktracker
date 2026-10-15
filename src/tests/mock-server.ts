@@ -5,7 +5,7 @@ import { makeServer } from "../mirage/server";
 export let server: Server;
 
 beforeAll(() => {
-  server = makeServer();
+  server = makeServer({ environment: "test" });
 });
 
 afterEach(() => {

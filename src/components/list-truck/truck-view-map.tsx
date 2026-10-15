@@ -1,6 +1,9 @@
 import "leaflet/dist/leaflet.css";
+import { useEffect } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { DEFAULT_LOCATION, TILE_LAYER } from "../../constants/map";
 import { TruckApiResponse } from "../../interfaces/truck";
+import { formatDate } from "../../utils/date";
 import truckIcon from "../../utils/map/truck-icon";
 
 interface MapProps {
@@ -8,50 +11,52 @@ interface MapProps {
   readonly selectedTruck: TruckApiResponse | null;
 }
 
+const SELECTED_TRUCK_ZOOM = 10;
+
 const FlyToTruck = ({
   selectedTruck,
 }: {
   selectedTruck: TruckApiResponse | null;
 }) => {
   const map = useMap();
-  if (selectedTruck) {
-    map.flyTo(
-      [selectedTruck.coordinates.latitude, selectedTruck.coordinates.longitude],
-      10,
-      { animate: true }
-    );
-  }
+
+  useEffect(() => {
+    if (!selectedTruck) return;
+
+    const { latitude, longitude } = selectedTruck.coordinates;
+    map.flyTo([latitude, longitude], SELECTED_TRUCK_ZOOM, { animate: true });
+  }, [map, selectedTruck]);
+
   return null;
 };
 
-export const TruckViewMap = ({ trucks, selectedTruck }: MapProps) => {
-  return (
-    <MapContainer
-      center={[-23.55052, -46.63331]}
-      zoom={5}
-      style={{ height: "400px", width: "100%" }}
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+export const TruckViewMap = ({ trucks, selectedTruck }: MapProps) => (
+  <MapContainer
+    center={[DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude]}
+    zoom={4}
+    style={{ height: 400, width: "100%", borderRadius: 8 }}
+  >
+    <TileLayer url={TILE_LAYER.url} attribution={TILE_LAYER.attribution} />
 
-      <FlyToTruck selectedTruck={selectedTruck} />
+    <FlyToTruck selectedTruck={selectedTruck} />
 
-      {trucks.map((truck) => (
-        <Marker
-          key={truck.id}
-          position={[truck.coordinates.latitude, truck.coordinates.longitude]}
-          icon={truckIcon}
-        >
-          <Popup>
-            <strong>{truck.identifier}</strong>
-            <br />
-            Placa: {truck.license_plate}
-            <br />
-            Rastreador: {truck.tracker_serial_number}
-            <br />
-            Início: {truck.start_date}
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
-};
+    {trucks.map((truck) => (
+      <Marker
+        key={truck.id}
+        position={[truck.coordinates.latitude, truck.coordinates.longitude]}
+        icon={truckIcon}
+        alt={truck.identifier}
+      >
+        <Popup>
+          <strong>{truck.identifier}</strong>
+          <br />
+          Placa: {truck.license_plate}
+          <br />
+          Rastreador: {truck.tracker_serial_number}
+          <br />
+          Início: {formatDate(truck.start_date)}
+        </Popup>
+      </Marker>
+    ))}
+  </MapContainer>
+);

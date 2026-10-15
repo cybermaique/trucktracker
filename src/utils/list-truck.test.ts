@@ -42,9 +42,9 @@ describe("Truck Utility Functions", () => {
     expect(result).toBe("ABC1234");
   });
 
-  it("should return undefined for a non-existent key", () => {
+  it("should return an empty string for a non-existent key", () => {
     const result = getTruckCellValue(truck, "nonExistentKey");
-    expect(result).toBeUndefined();
+    expect(result).toBe("");
   });
 
   it("should correctly format license plate 'abc1234' to 'ABC-1234'", () => {

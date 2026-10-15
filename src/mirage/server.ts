@@ -1,74 +1,75 @@
 import { createServer, Model, Response } from "miragejs";
 import { TRUCKS } from "../__mocks__/trucks-server.mock";
+import { NewTruck } from "../interfaces/truck";
 
-export function makeServer() {
+type MirageEnvironment = "development" | "test";
+
+const REQUIRED_FIELDS: (keyof NewTruck)[] = [
+  "identifier",
+  "license_plate",
+  "tracker_serial_number",
+  "coordinates",
+];
+
+const isValidTruck = (truck: Partial<NewTruck>) =>
+  REQUIRED_FIELDS.every((field) => Boolean(truck[field]));
+
+const invalidDataResponse = () =>
+  new Response(400, {}, { error: "Dados inválidos" });
+
+const notFoundResponse = () =>
+  new Response(404, {}, { error: "Caminhão não encontrado" });
+
+/**
+ * Fake REST API used by the app (there is no real backend).
+ *
+ * In `development` the database is seeded and responses are delayed to
+ * simulate network latency. In `test` Mirage starts empty and responds
+ * immediately, so each test controls its own data.
+ */
+export function makeServer({
+  environment = "development",
+}: { environment?: MirageEnvironment } = {}) {
   return createServer({
+    environment,
+
+    timing: 400,
+
     models: {
       truck: Model,
     },
 
     seeds(server) {
-      TRUCKS.forEach((truck) => {
-        server.create("truck", truck);
-      });
+      TRUCKS.forEach((truck) => server.create("truck", truck));
     },
 
     routes() {
       this.namespace = "api";
 
-      this.get("/caminhoes", (schema) => {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(schema.all("truck"));
-          }, 300);
-        });
-      });
+      this.get("/caminhoes", (schema) => schema.all("truck"));
 
       this.post("/caminhao", (schema, request) => {
-        let newTruck = JSON.parse(request.requestBody);
+        const newTruck = JSON.parse(request.requestBody);
 
-        if (
-          !newTruck.license_plate ||
-          !newTruck.tracker_serial_number ||
-          !newTruck.coordinates ||
-          !newTruck.identifier
-        ) {
-          return new Response(400, {}, { error: "Dados inválidos" });
-        }
+        if (!isValidTruck(newTruck)) return invalidDataResponse();
 
-        return schema.create("truck", { ...newTruck });
+        return schema.create("truck", newTruck);
       });
 
       this.put("/caminhao/:id", (schema, request) => {
-        let id = request.params.id;
-        let updatedTruck = JSON.parse(request.requestBody);
+        const truck = schema.find("truck", request.params.id);
+        if (!truck) return notFoundResponse();
 
-        let truck = schema.find("truck", id);
-
-        if (!truck) {
-          return new Response(404, {}, { error: "Caminhão não encontrado" });
-        }
-
-        if (
-          !updatedTruck.license_plate ||
-          !updatedTruck.tracker_serial_number ||
-          !updatedTruck.coordinates ||
-          !updatedTruck.identifier
-        ) {
-          return new Response(400, {}, { error: "Dados inválidos" });
-        }
+        const updatedTruck = JSON.parse(request.requestBody);
+        if (!isValidTruck(updatedTruck)) return invalidDataResponse();
 
         truck.update(updatedTruck);
         return truck;
       });
 
       this.delete("/caminhao/:id", (schema, request) => {
-        let id = request.params.id;
-        let truck = schema.find("truck", id);
-
-        if (!truck) {
-          return new Response(404, {}, { error: "Caminhão não encontrado" });
-        }
+        const truck = schema.find("truck", request.params.id);
+        if (!truck) return notFoundResponse();
 
         truck.destroy();
         return new Response(

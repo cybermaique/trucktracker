@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { addTruck } from "./post-truck";
 
-vi.mock("../api/addTruck", () => ({
-  addTruck: vi.fn(),
-}));
-
 describe("addTruck", () => {
   it("should successfully register the truck", async () => {
     const mockResponse = {
@@ -15,7 +11,7 @@ describe("addTruck", () => {
       coordinates: { latitude: 0, longitude: 0 },
       image: "",
     };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockResponse),
     });
@@ -41,7 +37,7 @@ describe("addTruck", () => {
   });
 
   it("should throw an error when the request fails", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       json: () => Promise.resolve({}),
     });

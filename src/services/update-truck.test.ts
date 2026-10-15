@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { TRUCKS } from "../__mocks__/trucks-server.mock";
-import { server } from "../tests/setup-tests";
+import { server } from "../tests/mock-server";
 import { updateTruck } from "./update-truck";
 
 describe("updateTruck", () => {
   it("should successfully update a truck", async () => {
-    const mockTruck = { ...TRUCKS[0], license_plate: "XYZ-9876" };
+    server.create("truck", TRUCKS[0]);
+    const updatedTruck = { ...TRUCKS[0], license_plate: "XYZ-9876" };
 
-    const result = await updateTruck(`/api/caminhao/${mockTruck.id}`, {
-      arg: mockTruck,
+    const result = await updateTruck(`/api/caminhao/${updatedTruck.id}`, {
+      arg: updatedTruck,
     });
 
-    expect(result).toEqual(mockTruck);
-
-    const updatedTruck = server.schema.find("truck", mockTruck.id);
-    expect(updatedTruck?.attrs).toEqual(mockTruck);
+    expect(result).toEqual(updatedTruck);
+    expect(server.schema.find("truck", updatedTruck.id)?.attrs).toEqual(
+      updatedTruck
+    );
   });
 
   it("should throw an error when the truck does not exist", async () => {

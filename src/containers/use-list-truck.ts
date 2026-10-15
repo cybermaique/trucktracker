@@ -1,47 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useUserLocation from "../hooks/use-user-location";
-import { TruckWithDistance } from "../interfaces/truck";
+import { TruckFilters } from "../interfaces/truck";
 import { useGetTrucks } from "../services/get-trucks";
-import { useLoadingStore } from "../stores/loading";
 import { useSnackbarStore } from "../stores/snackbar";
 import { sortAndFilterTrucks } from "../utils/list-truck";
 
-export const useListTruck = (appliedFilters: any) => {
-  const { data: trucks, error, isLoading } = useGetTrucks();
-  const { setLoading } = useLoadingStore();
-  const { showSnackbar } = useSnackbarStore();
-  const userLocation = useUserLocation();
-  const [filteredTrucks, setFilteredTrucks] = useState<TruckWithDistance[]>([]);
+export const useListTruck = (appliedFilters: TruckFilters) => {
+  const { data: trucks, error, isLoading: isFetching } = useGetTrucks();
+  const { location: userLocation } = useUserLocation();
+  const showSnackbar = useSnackbarStore((state) => state.showSnackbar);
   const [isDistanceDescending, setIsDistanceDescending] = useState(false);
 
-  const hasData = !isLoading && (filteredTrucks?.length ?? 0) > 0;
+  // Distances depend on the user's position, so the list is only ready once
+  // both the API response and the location (real or fallback) are available.
+  const isLoading = isFetching || !userLocation;
+
+  const filteredTrucks = useMemo(
+    () =>
+      userLocation
+        ? sortAndFilterTrucks(
+            trucks ?? [],
+            appliedFilters,
+            isDistanceDescending,
+            userLocation
+          )
+        : [],
+    [trucks, appliedFilters, isDistanceDescending, userLocation]
+  );
 
   useEffect(() => {
-    if (userLocation) {
-      setFilteredTrucks(
-        sortAndFilterTrucks(
-          trucks ?? [],
-          appliedFilters,
-          isDistanceDescending,
-          userLocation
-        )
-      );
-    }
-  }, [appliedFilters, trucks, isDistanceDescending, userLocation]);
-
-  useEffect(() => setLoading(isLoading), [isLoading, setLoading]);
-
-  useEffect(() => {
-    if (error) {
-      showSnackbar("Erro ao carregar os veículos.", "error");
-    }
+    if (error) showSnackbar("Erro ao carregar os veículos.", "error");
   }, [error, showSnackbar]);
 
   return {
     trucks: filteredTrucks,
     isLoading,
+    hasError: Boolean(error),
+    hasData: !isLoading && filteredTrucks.length > 0,
     isDistanceDescending,
     setIsDistanceDescending,
-    hasData,
   };
 };

@@ -1,13 +1,16 @@
 import { useState } from "react";
+import { TruckFilters } from "../interfaces/truck";
+
+export const EMPTY_FILTERS: TruckFilters = {
+  licensePlate: "",
+  trackerSerialNumber: "",
+  maxDistance: "",
+};
 
 export const useTruckFilters = () => {
-  const [filters, setFilters] = useState({
-    licensePlate: "",
-    trackerSerialNumber: "",
-    maxDistance: "",
-  });
-
-  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [filters, setFilters] = useState<TruckFilters>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] =
+    useState<TruckFilters>(EMPTY_FILTERS);
 
   const handleSearch = () => setAppliedFilters(filters);
 
@@ -16,13 +19,8 @@ export const useTruckFilters = () => {
   };
 
   const handleClear = () => {
-    const clearedFilters = {
-      licensePlate: "",
-      trackerSerialNumber: "",
-      maxDistance: "",
-    };
-    setFilters(clearedFilters);
-    setAppliedFilters(clearedFilters);
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
   };
 
   return {

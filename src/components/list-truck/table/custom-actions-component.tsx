@@ -21,28 +21,28 @@ export const CustomActionsComponent = (props: TablePaginationActionsProps) => {
       <IconButton
         onClick={handleFirstPage}
         disabled={isFirstPage}
-        aria-label="first page"
+        aria-label="Primeira página"
       >
         <FirstPageIcon sx={{ fontSize: 31 }} />
       </IconButton>
       <IconButton
         onClick={handleBack}
         disabled={isFirstPage}
-        aria-label="previous page"
+        aria-label="Página anterior"
       >
         <ArrowBackIosNewIcon />
       </IconButton>
       <IconButton
         onClick={handleNext}
         disabled={isLastPage}
-        aria-label="next page"
+        aria-label="Próxima página"
       >
         <ArrowForwardIosIcon />
       </IconButton>
       <IconButton
         onClick={handleLastPage}
         disabled={isLastPage}
-        aria-label="last page"
+        aria-label="Última página"
       >
         <LastPageIcon sx={{ fontSize: 31 }} />
       </IconButton>
