@@ -25,7 +25,7 @@
 
 TruckTracker began as the take-home challenge for a **Frontend Developer position at [Inlog](https://github.com/weareinlog/Desafio-Inlog---Vaga-Frontend-Developer)**, which I passed. The brief asked for a truck list sorted by proximity to the user with every truck pinned on a map, a registration form, and tests for the list, the form and a fake API.
 
-A year later I rebuilt it as **v2**, a portfolio case that answers one question: _how would I build this today, with no constraints?_ Every library was re-evaluated against the current ecosystem (October 2026), the UI was redesigned from scratch, and the project got the delivery pipeline I would expect from a production codebase.
+I later rebuilt it as **v2**, a portfolio case that answers one question: _how would I build this today, with no constraints?_ Every library was re-evaluated against the current ecosystem (October 2026), the UI was redesigned from scratch, and the project got the delivery pipeline I would expect from a production codebase.
 
 > **No backend required.** A [Mock Service Worker](https://mswjs.io/) intercepts `/api/*` at the network level, so the deployed demo is fully interactive. Data lives in your browser's `localStorage`; use _Restaurar dados da demo_ in the sidebar to reset it.
 
@@ -68,21 +68,21 @@ A year later I rebuilt it as **v2**, a portfolio case that answers one question:
 
 ## 🛠 Tech stack and decisions
 
-| Concern      | Choice                                                          | Why (and what I compared it with)                                                                                                                                                                                                         |
-| ------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UI runtime   | **React 19** + **React Compiler**                               | Automatic memoization: no hand-written `useMemo`/`useCallback`. Its ESLint rules catch impure renders and state set inside effects.                                                                                                       |
-| Language     | **TypeScript 6** (strict, `noUncheckedIndexedAccess`)           | TypeScript 7 (the native Go compiler) is out, but `typescript-eslint` only supports `<6.1`. Type-aware linting matters more than compile speed here.                                                                                      |
-| Build        | **Vite 8** (Rolldown)                                           | Route-level code splitting, long-cached vendor chunks, and heavy libraries (jsPDF, ~400 kB) loaded only when needed.                                                                                                                      |
-| Maps         | **MapLibre GL** + `@vis.gl/react-maplibre` + **OpenFreeMap**    | WebGL vector tiles, native clustering and data-driven styling. **Leaflet** is raster-based and `react-leaflet` has had no release since 2024. **Google Maps/Mapbox** need an API key and billing, which a public repository would expose. |
-| Server state | **TanStack Query**                                              | Query-key factories, optimistic mutations with rollback, and prefetching from route loaders. It replaced SWR and a Redux slice that only duplicated the cache.                                                                            |
-| Routing      | **React Router 8** (data mode)                                  | Lazy routes, loaders that start fetching in parallel with the chunk download, breadcrumbs from route `handle`s.                                                                                                                           |
-| UI kit       | **Tailwind CSS 4** + **shadcn/ui** (Radix)                      | Accessible primitives with code we own and theme through CSS variables. It replaced MUI 6, whose runtime CSS-in-JS and default look did not fit a custom design.                                                                          |
-| Forms        | **React Hook Form** + **Zod 4**                                 | A single schema validates the form, and a `transform` narrows its output to the domain type.                                                                                                                                              |
-| API contract | **Zod at the boundary**                                         | Responses are parsed and mapped from the challenge's snake_case DTO to a camelCase domain model.                                                                                                                                          |
-| Mock API     | **MSW 3**                                                       | The same handlers serve the browser demo (Service Worker), unit tests (Node) and E2E tests. It replaced **MirageJS**, which is unmaintained.                                                                                              |
-| Routing      | **OSRM** (FOSSGIS instance) + polyline6                         | Keyless, CORS-enabled road routing for the selected truck, decoded with a small, tested polyline decoder. A production setup would self-host OSRM/Valhalla or use a provider with truck profiles (weight, height, tolls).                 |
-| Testing      | **Vitest 5**, **Testing Library**, **Playwright**, **axe-core** | Behavior-driven unit/integration tests plus real-browser E2E and accessibility audits.                                                                                                                                                    |
-| Tooling      | ESLint 10, Prettier, knip, husky + lint-staged, Dependabot      | Static analysis, dead-code detection and dependency hygiene, all enforced in CI.                                                                                                                                                          |
+| Concern      | Choice                                                          | Why (and what I compared it with)                                                                                                                                                                                         |
+| ------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI runtime   | **React 19** + **React Compiler**                               | Automatic memoization: no hand-written `useMemo`/`useCallback`. Its ESLint rules catch impure renders and state set inside effects.                                                                                       |
+| Language     | **TypeScript 6** (strict, `noUncheckedIndexedAccess`)           | Strict types and checked indexed access, with type-aware ESLint rules alongside the React Compiler checks.                                                                                                                |
+| Build        | **Vite 8** (Rolldown)                                           | Route-level code splitting, long-cached vendor chunks, and heavy libraries (jsPDF, ~400 kB) loaded only when needed.                                                                                                      |
+| Maps         | **MapLibre GL** + `@vis.gl/react-maplibre` + **OpenFreeMap**    | WebGL vector tiles, native clustering and data-driven styling. The demo uses OpenFreeMap without an API key, keeping setup simple for visitors and contributors.                                                          |
+| Server state | **TanStack Query**                                              | Query-key factories, optimistic mutations with rollback, and prefetching from route loaders. It replaced SWR and a Redux slice that only duplicated the cache.                                                            |
+| Routing      | **React Router 8** (data mode)                                  | Lazy routes, loaders that start fetching in parallel with the chunk download, breadcrumbs from route `handle`s.                                                                                                           |
+| UI kit       | **Tailwind CSS 4** + **shadcn/ui** (Radix)                      | Accessible primitives with code we own and theme through CSS variables. It replaced MUI 6, whose runtime CSS-in-JS and default look did not fit a custom design.                                                          |
+| Forms        | **React Hook Form** + **Zod 4**                                 | A single schema validates the form, and a `transform` narrows its output to the domain type.                                                                                                                              |
+| API contract | **Zod at the boundary**                                         | Responses are parsed and mapped from the challenge's snake_case DTO to a camelCase domain model.                                                                                                                          |
+| Mock API     | **MSW 3**                                                       | The same handlers serve the browser demo (Service Worker), unit tests (Node) and E2E tests. It replaced **MirageJS** and keeps browser and test API behavior in one place.                                                |
+| Routing      | **OSRM** (FOSSGIS instance) + polyline6                         | Keyless, CORS-enabled road routing for the selected truck, decoded with a small, tested polyline decoder. A production setup would self-host OSRM/Valhalla or use a provider with truck profiles (weight, height, tolls). |
+| Testing      | **Vitest 5**, **Testing Library**, **Playwright**, **axe-core** | Behavior-driven unit/integration tests plus real-browser E2E and accessibility audits.                                                                                                                                    |
+| Tooling      | ESLint 10, Prettier, knip, husky + lint-staged, Dependabot      | Static analysis, dead-code detection and dependency hygiene, all enforced in CI.                                                                                                                                          |
 
 ## 🏗 Architecture
 
@@ -160,6 +160,18 @@ Open `http://localhost:5173` and allow location access to see real distances.
 | `pnpm test:e2e`                                              | Playwright suite (run `pnpm exec playwright install chromium` once, or set `PW_CHANNEL=chrome` to use an installed browser) |
 | `pnpm lint` / `pnpm format` / `pnpm typecheck` / `pnpm knip` | Static analysis                                                                                                             |
 | `pnpm validate`                                              | Everything the CI quality job runs                                                                                          |
+
+## 🌐 Demo and deployment
+
+The [live demo](https://cybermaique.github.io/trucktracker/) runs without an account, API keys or environment variables. The interface is in Brazilian Portuguese.
+
+- Truck records, edits and photos stay in this browser's `localStorage`; they are not shared between devices or visitors. Clearing site data or choosing **Restaurar dados da demo** resets the fleet.
+- Positions are demo data or manually entered coordinates. The app does not receive live GPS telemetry.
+- Map tiles and road routes need an internet connection. Road routing uses a **car profile**, without truck height, weight or cargo restrictions; it falls back to a straight line when unavailable.
+
+The [deployment workflow](.github/workflows/deploy.yml) publishes pushes to `main` to GitHub Pages. It builds with `BASE_PATH=/<repository-name>/` and copies `index.html` to `404.html` so direct links can load the SPA. The router and Service Worker use the configured base path.
+
+For another static host, publish `dist/`, set `BASE_PATH` to its deployment path (or keep `/` for the root), and configure unknown routes to serve `index.html`. A direct link on GitHub Pages can return HTTP 404 while still loading the app through its fallback page.
 
 ## 🧭 Project history
 
